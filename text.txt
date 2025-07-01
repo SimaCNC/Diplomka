@@ -1,0 +1,5 @@
+CONTROLLER -odkaz na funkce v MODELU - metody nebo funkce spravovane v controlleru
+
+M - funkce spravovane v controlleru od modelu
+
+cisla u popisku v controlleru odpovidaji cca strane kde se spojitost vyskytuje
