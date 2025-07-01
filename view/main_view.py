@@ -49,7 +49,7 @@ class ComGUI():
         self.mcu_model = mcu_model
         
         #LEVE OKNA - COM PRIPOJENI
-        self.frame_left = LabelFrame(root, text="COM manažer připojení", padx=5, pady=5, bg="white")
+        self.frame_left = LabelFrame(self.root, text="COM manažer připojení", padx=5, pady=5, bg="white")
         self.frame_piezo = LabelFrame(self.frame_left, text="Piezpohony", padx=5, pady=5, bg="white")
         self.frame_MCU = LabelFrame(self.frame_left, text="MCU", padx=5, pady=5, bg="white")
         
@@ -156,6 +156,16 @@ class ComGUI():
 #SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY - LEVE HORNI OKNO APLIKACE, trida ComGui()     
     
     
+class PiezoGUI():
+    def __init__(self, root: 'Tk', controller : 'MainController' ,piezo_model : 'Piezo_model'):
+        self.root = root   
+        self.controller = controller
+        self.piezo_model = piezo_model
+        
+
+        
+        
+        
         
 if __name__ == "__main__":
     print("TOTO NENI HLAVNI APLIKACE")

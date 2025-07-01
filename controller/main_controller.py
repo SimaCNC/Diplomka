@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from model.Serial_model import SerialCtrl
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
+    from view.main_view import PiezoGUI
     import tkinter as Tk
     
 class MainController():
@@ -36,6 +37,9 @@ class MainController():
                 self.com.drop_com_piezo["state"] = "disable"
                 InfoMsg = f"Piezo\nÚspěšně připojeno pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
                 messagebox.showinfo("Piezo info", InfoMsg)
+                
+                #Vytvoreni PiezoGUI:
+                self.piezo_gui = PiezoGUI(self.root,self ,self.piezo_model)
                 
             else:
                 ErrorMsg = f"Piezo\nChyba v připojení pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
