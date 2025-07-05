@@ -1,4 +1,6 @@
 import serial.tools.list_ports
+import threading
+import time
 
 class SerialCtrl():
     
@@ -41,12 +43,38 @@ class SerialCtrl():
             print(f"Port nebyl otevren, nelze zavrit")
             
             
-    # METODY PRO POSILANI - PIEZO
+    # METODY PRO POSILANI a PRIJEM DAT - PIEZO
+     
     def send_msg_simple(self, msg : str):
         print(msg)
         self.ser.write(msg.encode())
         
+    def get_msg_simple(self, callback = None): #CALLBACK JE FUNKCE, KTERA JE VLOZENA JAKO ARGUMENT - FLEXIBILNI POUZITI FUNKCE get_msg_simple!!
+        try:
+            data = self.ser.readline().decode().strip()
+            if data:
+                print(f"Přijaté data: {data}")
+                if callback:
+                    callback(data)
+        except Exception as e:
+            print(f"chyba pri cteni dat: {e}")
             
-            
+    def get_msg_stream(self,send, expect, callback):
+        try:
+            while True:
+                time.sleep(0.2)
+                self.send_msg_simple(send)
+                print(f"odeslane: {send}")
+                time.sleep(0.2)
+                msg_received = self.ser.readline().decode().strip()
+                print(f"[stream] Prijato: {msg_received}, ocekavane {expect}")
+                if msg_received == expect:
+                    if callback:
+                        callback(msg_received)
+                    break #konec vlakna
+                else:
+                    continue
+        except Exception as e:
+            print(f"chyba: {e}")
             
                    

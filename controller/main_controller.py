@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+import threading
 
 from typing import TYPE_CHECKING
 
@@ -87,11 +88,22 @@ class MainController():
 
 
 #CONTROLLER PIEZO OVLADANI, trida PiezoGUI() 151
+    #obas je pouziti slov/promennych home a index matouci - jedna se o totez jsou to synonyma
     def M_C_Index(self):
         print("VOLANI HOME")
         self.piezo_model.index_pozice()
-        self.piezo_gui.publish_PiezoGUI_home_done()
+        send = "RI x y z\n"
+        expect = "$RI x1 y1 z1" 
+        self.piezo_model.t1 = threading.Thread(target=self.piezo_model.piezo_serial.get_msg_stream, args=(send, expect, self.M_C_Index_done,), daemon=True)
+        self.piezo_model.t1.start()
         
+    def M_C_Index_done(self, msg):
+        print(f"zprava z piezo: {msg}")
+        if msg == "$RI x1 y1 z1":
+            # self.piezo_gui.publish_PiezoGUI_home_done()
+            self.root.after(0, self.piezo_gui.publish_PiezoGUI_home_done)
+        else:
+            print("Neuspesne")
         #POSLAT PRES SERIAL POZADAVEK O ZASLANI NA HOME POZICI!
     
     def M_C_Reference(self):
