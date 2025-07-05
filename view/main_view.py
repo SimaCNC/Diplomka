@@ -168,23 +168,28 @@ class PiezoGUI():
         
         
     def publish_PiezoGUI_home_done(self):
-        self.BTN_reference_piezo = Button(self.frame_piezo_ovladani, text="REFERENCE", width=10, command= self.controller.M_C_Reference)#SERIAL - POSLAT INDEX - PRIJEM
+        
+        self.label_piezo_precist_polohu = Label(self.frame_piezo_ovladani, text="Přečíst aktuální polohu:", bg= "white", width=20, anchor="w")
+        self.BTN_piezo_precist_polohu = Button(self.frame_piezo_ovladani, text="POLOHA", width=10, command=self.controller.M_C_precti_polohu)
+        
         self.label_reference_piezo = Label(self.frame_piezo_ovladani, text="Nastavit referenční pozici:", bg="white", width=20, anchor="w")
+        self.BTN_reference_piezo = Button(self.frame_piezo_ovladani, text="REFERENCE", width=10, command= self.controller.M_C_Reference)#SERIAL - POSLAT INDEX - PRIJEM
+        
         self.label_rychlost_piezo = Label(self.frame_piezo_ovladani, text="Nastavit rychlost posunu:", bg="white", width=20, anchor="w")
         
         self.frame_piezo_pozice = LabelFrame(self.frame_piezo_gui,text="pozice", padx=5, pady=5, bg="white")
         self.label_pozice_home_piezo = Label(self.frame_piezo_pozice, text="Pozice od home:", padx=5, pady=5, bg="white", width=15,)
-        self.label_pozice_homeX_piezo = Label(self.frame_piezo_pozice, text="Xh:", padx=5, pady=5, bg="white", width=5,)
-        self.label_pozice_homeY_piezo = Label(self.frame_piezo_pozice, text="Yh:", padx=5, pady=5, bg="white", width=5,)
-        self.label_pozice_homeZ_piezo = Label(self.frame_piezo_pozice, text="Zh:", padx=5, pady=5, bg="white", width=5,)
+        self.label_pozice_homeX_piezo = Label(self.frame_piezo_pozice, text="Xh:", padx=5, pady=5, bg="white", width=10)
+        self.label_pozice_homeY_piezo = Label(self.frame_piezo_pozice, text="Yh:", padx=5, pady=5, bg="white", width=10)
+        self.label_pozice_homeZ_piezo = Label(self.frame_piezo_pozice, text="Zh:", padx=5, pady=5, bg="white", width=10)
         self.label_pozice_reference_piezo = Label(self.frame_piezo_pozice, text="Pozice od reference:", padx=5, pady=5, bg="white")
         self.label_pozice_referenceX_piezo = Label(self.frame_piezo_pozice, text="Xr:", padx=5, pady=5, bg="white", width=5,)
         self.label_pozice_referenceY_piezo = Label(self.frame_piezo_pozice, text="Yr:", padx=5, pady=5, bg="white", width=5,)
         self.label_pozice_referenceZ_piezo = Label(self.frame_piezo_pozice, text="Zr:", padx=5, pady=5, bg="white", width=5,)
         self.frame_piezo_prikaz = LabelFrame(self.frame_piezo_gui,text="prikaz", padx=5, pady=5, bg="white")
         self.label_prikaz = Label(self.frame_piezo_prikaz, text="Prikaz poslat:", bg="white", width=15, anchor="w")
-        self.root.geometry("800x400")
-        self.root.minsize(800, 400)
+        self.root.geometry("900x500")
+        self.root.minsize(900, 500)
         self.publish()
         
         
@@ -193,7 +198,10 @@ class PiezoGUI():
         #ovladani
         self.label_reference_piezo.grid(row=1, column=0)
         self.BTN_reference_piezo.grid(row=1, column=1)
-        self.label_rychlost_piezo.grid(row=2, column=0)
+        self.label_piezo_precist_polohu.grid(row=2, column=0)
+        self.BTN_piezo_precist_polohu.grid(row=2, column=1)
+        
+        self.label_rychlost_piezo.grid(row=3, column=0)
         
         #pozice
         self.frame_piezo_pozice.grid(row=1, column=0, padx=5, pady=10, sticky="NW")

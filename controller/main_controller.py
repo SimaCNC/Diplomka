@@ -96,18 +96,33 @@ class MainController():
         expect = "$RI x1 y1 z1" 
         self.piezo_model.t1 = threading.Thread(target=self.piezo_model.piezo_serial.get_msg_stream, args=(send, expect, self.M_C_Index_done,), daemon=True)
         self.piezo_model.t1.start()
-        
+      
     def M_C_Index_done(self, msg):
         print(f"zprava z piezo: {msg}")
         if msg == "$RI x1 y1 z1":
             # self.piezo_gui.publish_PiezoGUI_home_done()
             self.root.after(0, self.piezo_gui.publish_PiezoGUI_home_done)
+            self.piezo_model.is_homed = True
+            self.M_C_precti_polohu()
         else:
             print("Neuspesne")
         #POSLAT PRES SERIAL POZADAVEK O ZASLANI NA HOME POZICI!
     
-    def M_C_Reference(self):
-        pass
+    def M_C_precti_polohu(self):
+        print("VOLANI AKTUALNI POLOHY")
+        if self.piezo_model.is_homed == True:
+            self.piezo_model.precti_polohu(self.M_C_precti_polohu_done)
+        else:
+            ErrorMsg = f"Piezo\nNejprve je nutné zavolat home!!"
+            messagebox.showerror("Piezo CHYBA", ErrorMsg)
+        
+    def M_C_precti_polohu_done(self):
+        self.piezo_gui.label_pozice_homeX_piezo.config(text=f"Xh:{self.piezo_model.x}")
+        self.piezo_gui.label_pozice_homeY_piezo.config(text=f"Yh:{self.piezo_model.y}")
+        self.piezo_gui.label_pozice_homeZ_piezo.config(text=f"Zh:{self.piezo_model.z}")
+        
+    def M_C_precti_referenci(self):
+        print("[PRECTENI REFERENCE]")
 
 
 
