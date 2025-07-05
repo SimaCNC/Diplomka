@@ -9,4 +9,6 @@ class Piezo_model():
         pass
 
 
-
+    def index_pozice(self):
+        msg = "IN x y z\n"
+        self.piezo_serial.send_msg_simple(msg)

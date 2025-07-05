@@ -1,10 +1,10 @@
 from tkinter import *
 from tkinter import messagebox
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from view.main_view import ComGUI
-    from model.Serial_model import SerialCtrl
+    from view.main_view import RootGUI, ComGUI
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
     from view.main_view import PiezoGUI
@@ -23,7 +23,7 @@ class MainController():
         pass
 #----OVLADANI INIT   
         
-#CONTROLLER PIEZO A MCU PRIPOJENI K COM SERIOVA KOMUNIKACE, trida ComGui()     
+#CONTROLLER PIEZO A MCU PRIPOJENI K COM SERIOVA KOMUNIKACE, trida ComGui() 36  
     def M_serial_connect_piezo(self):
         if self.com.btn_connect_piezo["text"] in "Připojit" :
             #Zacatek seriove komunikace - pripojeni metodou SerialOpen
@@ -39,7 +39,8 @@ class MainController():
                 messagebox.showinfo("Piezo info", InfoMsg)
                 
                 #Vytvoreni PiezoGUI:
-                self.piezo_gui = PiezoGUI(self.root,self ,self.piezo_model)
+                from view.main_view import PiezoGUI
+                self.piezo_gui = PiezoGUI(self.root, self, self.piezo_model)
                 
             else:
                 ErrorMsg = f"Piezo\nChyba v připojení pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
@@ -47,6 +48,7 @@ class MainController():
         
         else:
             self.piezo_model.piezo_serial.SerialClose()
+            self.piezo_gui.PiezoGUIClose()
             InfoMsg = f"Piezo\nÚspěšně odpojeno pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
             messagebox.showinfo("Piezo info", InfoMsg)  
             self.com.btn_connect_piezo["text"] = "Připojit"
@@ -82,3 +84,20 @@ class MainController():
             self.com.drop_com_MCU["state"] = "active"
             
 #CONTROLLER PIEZO A MCU PRIPOJENI K COM SERIOVA KOMUNIKACE, trida ComGui()   
+
+
+#CONTROLLER PIEZO OVLADANI, trida PiezoGUI() 151
+    def M_C_Index(self):
+        print("VOLANI HOME")
+        self.piezo_model.index_pozice()
+        self.piezo_gui.publish_PiezoGUI_home_done()
+        
+        #POSLAT PRES SERIAL POZADAVEK O ZASLANI NA HOME POZICI!
+    
+    def M_C_Reference(self):
+        pass
+
+
+
+
+#CONTROLLER PIEZO OVLADANI

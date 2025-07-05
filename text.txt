@@ -2,4 +2,6 @@ CONTROLLER -odkaz na funkce v MODELU - metody nebo funkce spravovane v controlle
 
 M - funkce spravovane v controlleru od modelu
 
+C - command pro piezopohony (funkce ma vysokou spojitost s piezopohony)
+
 cisla u popisku v controlleru odpovidaji cca strane kde se spojitost vyskytuje

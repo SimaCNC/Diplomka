@@ -8,6 +8,7 @@ from model.Serial_model import SerialCtrl
 
 
 
+
 #-----VIEW-----
 root_view = RootGUI()
 #-----VIEW-----
@@ -21,7 +22,7 @@ mcu_model = MCU_model(mcu_serial)
 #-----MODEL----
 
 #-----CONTROLLER----
-controller = MainController(root_view, None, piezo_model, mcu_model)
+controller = MainController(root_view.root, None, piezo_model, mcu_model)
 #-----CONTROLLER----
 
 #vytvoreni com_view a prirazeni controlleru

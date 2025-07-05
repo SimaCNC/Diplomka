@@ -1,7 +1,4 @@
 import serial.tools.list_ports
-import time
-import threading
-import view.main_view
 
 class SerialCtrl():
     
@@ -42,6 +39,12 @@ class SerialCtrl():
             print(f"Port {self.ser.port} byl uzavren")
         else:
             print(f"Port nebyl otevren, nelze zavrit")
+            
+            
+    # METODY PRO POSILANI - PIEZO
+    def send_msg_simple(self, msg : str):
+        print(msg)
+        self.ser.write(msg.encode())
         
             
             

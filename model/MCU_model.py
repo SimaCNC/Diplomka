@@ -5,4 +5,4 @@ if TYPE_CHECKING:
 
 class MCU_model():
     def __init__(self, mcu_serial : 'SerialCtrl'):
-        self.mcu_serial = mcu_serial
+        self.mcu_serial = mcu_serial 
