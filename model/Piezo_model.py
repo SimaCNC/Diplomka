@@ -13,7 +13,14 @@ class Piezo_model():
         self.y = None
         self.z = None
         self.is_homed = None
+        
+        self.x_old = 0
+        self.y_old = 0
+        self.z_old = 0
 
+        self.x_ref = 0
+        self.y_ref = 0
+        self.z_ref = 0
     
 
     def index_pozice(self):
@@ -33,9 +40,20 @@ class Piezo_model():
                         if raw.startswith("$RP"):
                             match = re.search(r"\$RP x([-\d.]+) y([-\d.]+) z([-\d.]+)", raw)
                             if match:
-                                self.x = round(float(match.group(1)), 2)
-                                self.y = round(float(match.group(2)), 2)
-                                self.z = round(float(match.group(3)), 2)
+                                x_new = round(float(match.group(1)), 2)
+                                y_new = round(float(match.group(2)), 2)
+                                z_new = round(float(match.group(3)), 2)
+                                
+                                self.x = x_new
+                                self.y = y_new
+                                self.z = z_new
+
+                                # Vypocet relativni polohy
+                                self.x_ref = round(self.x - self.x_old, 2)
+                                self.y_ref = round(self.y - self.y_old, 2)
+                                self.z_ref = round(self.z - self.z_old, 2)
+
+                            
                                 if callback_fun:
                                     callback_fun()
                             else:
@@ -46,3 +64,15 @@ class Piezo_model():
                     break         
         self.t1 = threading.Thread(target=precti_polohu_thread, daemon=True)
         self.t1.start()
+        
+    def nastav_referenci(self):
+        self.x_ref = 0.0
+        self.y_ref = 0.0
+        self.z_ref = 0.0
+        
+        if self.x is not None:
+            self.x_old = self.x
+        if self.y is not None:
+            self.y_old = self.y
+        if self.z is not None:
+            self.z_old = self.z

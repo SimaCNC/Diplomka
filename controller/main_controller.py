@@ -109,7 +109,7 @@ class MainController():
         #POSLAT PRES SERIAL POZADAVEK O ZASLANI NA HOME POZICI!
     
     def M_C_precti_polohu(self):
-        print("VOLANI AKTUALNI POLOHY")
+        print("[VOLANI AKTUALNI POLOHY]")
         if self.piezo_model.is_homed == True:
             self.piezo_model.precti_polohu(self.M_C_precti_polohu_done)
         else:
@@ -117,12 +117,23 @@ class MainController():
             messagebox.showerror("Piezo CHYBA", ErrorMsg)
         
     def M_C_precti_polohu_done(self):
-        self.piezo_gui.label_pozice_homeX_piezo.config(text=f"Xh:{self.piezo_model.x}")
-        self.piezo_gui.label_pozice_homeY_piezo.config(text=f"Yh:{self.piezo_model.y}")
-        self.piezo_gui.label_pozice_homeZ_piezo.config(text=f"Zh:{self.piezo_model.z}")
+        self.piezo_gui.label_pozice_homeX_piezo.config(text=f"Xh:{self.piezo_model.x:.2f}")
+        self.piezo_gui.label_pozice_homeY_piezo.config(text=f"Yh:{self.piezo_model.y:.2f}")
+        self.piezo_gui.label_pozice_homeZ_piezo.config(text=f"Zh:{self.piezo_model.z:.2f}")
         
-    def M_C_precti_referenci(self):
+        self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr:{self.piezo_model.x_ref:.2f}")
+        self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr:{self.piezo_model.y_ref:.2f}")
+        self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr:{self.piezo_model.z_ref:.2f}")
+                                    
+    def M_C_nastav_referenci(self):
         print("[PRECTENI REFERENCE]")
+        self.piezo_model.nastav_referenci()
+        self.M_C_nastav_referenci_done()
+       
+    def M_C_nastav_referenci_done(self):
+        self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr:{self.piezo_model.x_ref:.2f}")
+        self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr:{self.piezo_model.y_ref:.2f}")
+        self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr:{self.piezo_model.z_ref:.2f}")
 
 
 
