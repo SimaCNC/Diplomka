@@ -53,24 +53,27 @@ class SerialCtrl():
         try:
             data = self.ser.readline().decode().strip()
             if data:
-                print(f"Přijaté data: {data}")
+                print(f"[serial]:přijaté data: {data}")
                 if callback:
                     callback(data)
+            else:
+                print("[serial]: nebyla prijata zadne data - timeout")
+            return data
         except Exception as e:
-            print(f"chyba pri cteni dat: {e}")
+            print(f"[serial]: chyba pri cteni dat: {e}")
             
-    def get_msg_stream(self,send, expect, callback):
+    def get_msg_stream(self,send, expect, callback_fun = None):
         try:
             while True:
-                time.sleep(0.2)
+                time.sleep(0.05)
                 self.send_msg_simple(send)
                 print(f"odeslane: {send}")
-                time.sleep(0.2)
+                time.sleep(0.05)
                 msg_received = self.ser.readline().decode().strip()
                 print(f"[stream] Prijato: {msg_received}, ocekavane {expect}")
                 if msg_received == expect:
-                    if callback:
-                        callback(msg_received)
+                    if callback_fun:
+                        callback_fun(msg_received)
                     break #konec vlakna
                 else:
                     continue

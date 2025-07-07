@@ -1,0 +1,19 @@
+@startuml
+class MainController {
+    M_init_view_data()
+    M_serial_connect_piezo()
+    M_serial_connect_MCU()
+    M_C_Index()
+    M_C_Index_done()
+    M_C_precti_polohu()
+    M_C_precti_polohu_done()
+    M_C_nastav_referenci()
+    M_C_nastav_referenci_done()
+        root
+    com
+    piezo_model
+    mcu_model
+    piezo_gui
+    __init__()
+}
+@enduml

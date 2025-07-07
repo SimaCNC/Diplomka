@@ -154,12 +154,12 @@ class PiezoGUI():
         self.controller = controller
         self.piezo_model = piezo_model
         
-        self.frame_piezo_gui = LabelFrame(self.root, text="Piezo controll", padx=5, pady=5, bg="white", relief="groove",bd=5)
+        self.frame_piezo_gui = LabelFrame(self.root, text="Piezopohony", padx=5, pady=5, bg="white", relief="groove",bd=5)
         self.frame_piezo_gui.grid(row=0, column=4, rowspan=3, columnspan=3, padx=5, pady=5, sticky="NW")
         self.root.geometry("800x400")
         self.root.minsize(800, 400)
         #ovladani
-        self.frame_piezo_ovladani = LabelFrame(self.frame_piezo_gui,text="ovladani" ,padx=5, pady=5, bg="white")
+        self.frame_piezo_ovladani = LabelFrame(self.frame_piezo_gui,text="Ovládání" ,padx=5, pady=5, bg="white")
         self.frame_piezo_ovladani.grid(row=0, column=0, padx=5, pady=10, sticky="NW") 
         self.label_index_piezo = Label(self.frame_piezo_ovladani, text="Home pozice:", bg="white", width=20, anchor="w")
         self.label_index_piezo.grid(row=0, column=0, sticky="NW")
@@ -177,7 +177,8 @@ class PiezoGUI():
         
         self.label_rychlost_piezo = Label(self.frame_piezo_ovladani, text="Nastavit rychlost posunu:", bg="white", width=20, anchor="w")
         
-        self.frame_piezo_pozice = LabelFrame(self.frame_piezo_gui,text="pozice", padx=5, pady=5, bg="white")
+        #pozice
+        self.frame_piezo_pozice = LabelFrame(self.frame_piezo_gui,text="Pozice", padx=5, pady=5, bg="white")
         self.label_pozice_home_piezo = Label(self.frame_piezo_pozice, text="Pozice od home:", padx=5, pady=5, bg="white", width=15,)
         self.label_pozice_homeX_piezo = Label(self.frame_piezo_pozice, text="Xh:", padx=5, pady=5, bg="white", width=10)
         self.label_pozice_homeY_piezo = Label(self.frame_piezo_pozice, text="Yh:", padx=5, pady=5, bg="white", width=10)
@@ -186,8 +187,17 @@ class PiezoGUI():
         self.label_pozice_referenceX_piezo = Label(self.frame_piezo_pozice, text="Xr:", padx=5, pady=5, bg="white", width=10,)
         self.label_pozice_referenceY_piezo = Label(self.frame_piezo_pozice, text="Yr:", padx=5, pady=5, bg="white", width=10,)
         self.label_pozice_referenceZ_piezo = Label(self.frame_piezo_pozice, text="Zr:", padx=5, pady=5, bg="white", width=10,)
-        self.frame_piezo_prikaz = LabelFrame(self.frame_piezo_gui,text="prikaz", padx=5, pady=5, bg="white")
-        self.label_prikaz = Label(self.frame_piezo_prikaz, text="Prikaz poslat:", bg="white", width=15, anchor="w")
+        
+        #prikaz
+        self.frame_piezo_prikaz = LabelFrame(self.frame_piezo_gui,text="Příkaz", padx=5, pady=5, bg="white")
+        self.label_piezo_prikaz = Label(self.frame_piezo_prikaz, text="Příkaz k odeslání:", bg="white", width=20, anchor="w")
+        self.entry_piezo_prikaz = Entry(self.frame_piezo_prikaz, width=27,)
+        self.entry_piezo_prikaz.bind("<Return>", lambda _ : self.controller.M_C_send_msg_piezo(self.entry_piezo_prikaz.get()))
+        self.BTN_piezo_prikaz = Button(self.frame_piezo_prikaz, text="POSLAT", width=10, command= lambda: self.controller.M_C_send_msg_piezo(self.entry_piezo_prikaz.get()))
+        self.label_piezo_odpoved = Label(self.frame_piezo_prikaz, text="Odpověď piezopohony:", bg="white", width=20, anchor="w")
+        self.text_piezo_odpoved = Text(self.frame_piezo_prikaz, width=20, height=1)
+        self.BTN_piezo_odpoved = Button(self.frame_piezo_prikaz, text="REFRESH", width=10, command=self.controller.M_C_odpoved_piezo_refresh)#NENI HOTOVE
+        
         self.root.geometry("900x500")
         self.root.minsize(900, 500)
         self.publish()
@@ -213,10 +223,16 @@ class PiezoGUI():
         self.label_pozice_referenceX_piezo.grid(row=0, column=3, padx=5, pady=5, sticky="NW")
         self.label_pozice_referenceY_piezo.grid(row=1, column=3, padx=5, pady=5, sticky="NW")
         self.label_pozice_referenceZ_piezo.grid(row=2, column=3, padx=5, pady=5, sticky="NW")
+        
         #prikaz
         self.frame_piezo_prikaz.grid(row=2, column=0, padx=5, pady=10, sticky="NW")
-        self.label_prikaz.grid(row=0, column=0)
-        
+        self.label_piezo_prikaz.grid(row=0, column=0)
+        self.entry_piezo_prikaz.grid(row=0, column=1, sticky="NW")
+        self.BTN_piezo_prikaz.grid(row=0, column=2)
+        self.label_piezo_odpoved.grid(row=1, column=0, sticky="NW")
+        self.text_piezo_odpoved.grid(row=1, column=1)
+        self.text_piezo_odpoved.config(state="disabled")
+        self.BTN_piezo_odpoved.grid(row=1, column=2)
         
     def PiezoGUIClose(self):
         for widget in self.frame_piezo_gui.winfo_children():

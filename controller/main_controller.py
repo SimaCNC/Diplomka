@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 import threading
+import time
 
 from typing import TYPE_CHECKING
 
@@ -89,6 +90,7 @@ class MainController():
 
 #CONTROLLER PIEZO OVLADANI, trida PiezoGUI() 151
     #obas je pouziti slov/promennych home a index matouci - jedna se o totez jsou to synonyma
+    #OVLADANI
     def M_C_Index(self):
         print("VOLANI HOME")
         self.piezo_model.index_pozice()
@@ -96,45 +98,84 @@ class MainController():
         expect = "$RI x1 y1 z1" 
         self.piezo_model.t1 = threading.Thread(target=self.piezo_model.piezo_serial.get_msg_stream, args=(send, expect, self.M_C_Index_done,), daemon=True)
         self.piezo_model.t1.start()
-      
+    
+    def M_C_odpoved_wait(self, send, expect, callback_fun = None):
+        send = send
+        expect = expect
+        self.piezo_model.t2 = threading.Thread(target=self.piezo_model.piezo_serial.get_msg_stream, args=(send, expect, callback_fun), daemon=True)
+        self.piezo_model.t2.start() 
+    
+    #HODNE SKAREDE RESENI mc index done...!!!  
     def M_C_Index_done(self, msg):
         print(f"zprava z piezo: {msg}")
         if msg == "$RI x1 y1 z1":
-            # self.piezo_gui.publish_PiezoGUI_home_done()
             self.root.after(0, self.piezo_gui.publish_PiezoGUI_home_done)
             self.piezo_model.is_homed = True
             self.M_C_precti_polohu()
+            time.sleep(0.2)
+            self.piezo_model.piezo_serial.send_msg_simple(msg="SR x0.002 y0.002 z0.002;\n")
+            time.sleep(0.2)
+            self.piezo_model.piezo_serial.send_msg_simple(msg="GT x0 y0 z0;\n")
+            time.sleep(0.2)
+            # self.M_C_precti_polohu()
+            self.M_C_odpoved_wait(send="RS x y z\n", expect="$RS x2 y2 z2", callback_fun = self.M_C_precti_polohu)
         else:
-            print("Neuspesne")
+            print("[INDEX]: Neuspesne")
         #POSLAT PRES SERIAL POZADAVEK O ZASLANI NA HOME POZICI!
     
-    def M_C_precti_polohu(self):
+    #POZICE
+    def M_C_precti_polohu(self, msg = None):
         print("[VOLANI AKTUALNI POLOHY]")
         if self.piezo_model.is_homed == True:
-            self.piezo_model.precti_polohu(self.M_C_precti_polohu_done)
+            self.piezo_model.precti_polohu_stojici(self.M_C_precti_polohu_done)
         else:
             ErrorMsg = f"Piezo\nNejprve je nutné zavolat home!!"
             messagebox.showerror("Piezo CHYBA", ErrorMsg)
         
     def M_C_precti_polohu_done(self):
-        self.piezo_gui.label_pozice_homeX_piezo.config(text=f"Xh:{self.piezo_model.x:.2f}")
-        self.piezo_gui.label_pozice_homeY_piezo.config(text=f"Yh:{self.piezo_model.y:.2f}")
-        self.piezo_gui.label_pozice_homeZ_piezo.config(text=f"Zh:{self.piezo_model.z:.2f}")
+        self.piezo_gui.label_pozice_homeX_piezo.config(text=f"Xh: {self.piezo_model.x:.3f}")
+        self.piezo_gui.label_pozice_homeY_piezo.config(text=f"Yh: {self.piezo_model.y:.3f}")
+        self.piezo_gui.label_pozice_homeZ_piezo.config(text=f"Zh: {self.piezo_model.z:.3f}")
         
-        self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr:{self.piezo_model.x_ref:.2f}")
-        self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr:{self.piezo_model.y_ref:.2f}")
-        self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr:{self.piezo_model.z_ref:.2f}")
+        self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr: {self.piezo_model.x_ref:.3f}")
+        self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr: {self.piezo_model.y_ref:.3f}")
+        self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr: {self.piezo_model.z_ref:.3f}")
                                     
     def M_C_nastav_referenci(self):
-        print("[PRECTENI REFERENCE]")
+        print("[NASTAVENI REFERENCE]")
         self.piezo_model.nastav_referenci()
         self.M_C_nastav_referenci_done()
        
     def M_C_nastav_referenci_done(self):
-        self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr:{self.piezo_model.x_ref:.2f}")
-        self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr:{self.piezo_model.y_ref:.2f}")
-        self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr:{self.piezo_model.z_ref:.2f}")
+        self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr: {self.piezo_model.x_ref:.3f}")
+        self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr: {self.piezo_model.y_ref:.3f}")
+        self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr: {self.piezo_model.z_ref:.3f}")
 
+    #PRIKAZ
+    def M_C_send_msg_piezo(self, msg):
+        self.piezo_model.piezo_serial.send_msg_simple(msg=msg+"\n")
+        
+        def callback_po_odpovedi_piezo():
+            self.M_C_update_piezo_odpoved_do_GUI()
+            self.M_C_odpoved_wait(send="RS x y z\n", expect="$RS x2 y2 z2", callback_fun = self.M_C_precti_polohu) #aktualni pozice po zastaveni
+        
+        self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
+               
+    def M_C_update_piezo_odpoved_do_GUI(self):
+        odpoved = self.piezo_model.posledni_odpoved_piezopohony
+        
+        if odpoved:
+            self.piezo_gui.text_piezo_odpoved.config(state="normal")
+            self.piezo_gui.text_piezo_odpoved.delete("1.0", "end")
+            self.piezo_gui.text_piezo_odpoved.insert("1.0", odpoved)
+            self.piezo_gui.text_piezo_odpoved.config(state="disabled")    
+
+    def M_C_odpoved_piezo_refresh(self):
+        self.piezo_gui.text_piezo_odpoved.config(state="normal")
+        self.piezo_gui.text_piezo_odpoved.delete("1.0", "end")
+        self.piezo_gui.text_piezo_odpoved.insert("1.0", "")
+        self.piezo_gui.text_piezo_odpoved.config(state="disabled")
+    
 
 
 
