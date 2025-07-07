@@ -22,6 +22,8 @@ class Piezo_model():
         self.y_ref = 0
         self.z_ref = 0
         
+        self.rychlost = 4000
+        
         self.posledni_odpoved_piezopohony = None
     
         self.t1 = None
@@ -96,3 +98,6 @@ class Piezo_model():
         self.t1 = threading.Thread(target=msg_odpoved_thread, daemon=True)
         self.t1.start()
     
+    def nastav_rychlost(self, rychlost): 
+        rychlost = f"SP x{rychlost} y{rychlost} z{rychlost};\n"
+        self.piezo_serial.send_msg_simple(rychlost)
