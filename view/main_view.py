@@ -80,8 +80,8 @@ class ComGUI():
         
         self.label_com_MCU.grid(row=0, column=0, padx=5, pady=5)
         self.label_bd_MCU.grid(row=1, column=0, padx=5, pady=5)
-        self.btn_refresh_MCU.grid(row=0, column=2)
-        self.btn_connect_MCU.grid(row=1, column=2)
+        self.btn_refresh_MCU.grid(row=0, column=2, padx=5, pady=5)
+        self.btn_connect_MCU.grid(row=1, column=2, padx=5, pady=5)
         self.drop_com_MCU.grid(row=0, column=1, padx=5, pady=5)
         self.drop_bd_MCU.grid(row=1, column=1, padx=5, pady=5)
         #LEVE OKNA - COM PRIPOJENI
@@ -161,26 +161,43 @@ class PiezoGUI():
         #ovladani
         self.frame_piezo_ovladani = LabelFrame(self.frame_piezo_gui,text="Ovládání" ,padx=5, pady=5, bg="white")
         self.frame_piezo_ovladani.grid(row=0, column=0, padx=5, pady=10, sticky="NW") 
-        self.label_index_piezo = Label(self.frame_piezo_ovladani, text="Home pozice:", bg="white", width=20, anchor="w")
+        self.frame_piezo_ovladani_leve = Frame(self.frame_piezo_ovladani,padx=5, pady=5, bg="white")
+        self.frame_piezo_ovladani_leve.grid(row=0, column=0, padx=5, pady=10, sticky="NW") 
+        self.frame_piezo_ovladani_prave = Frame(self.frame_piezo_ovladani,padx=5, pady=5, bg="white")
+        self.frame_piezo_ovladani_prave.grid(row=0, column=1, padx=5, pady=10, sticky="NW") 
+        
+        self.label_index_piezo = Label(self.frame_piezo_ovladani_leve, text="Home pozice:", bg="white", width=20, anchor="w")
         self.label_index_piezo.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
-        self.BTN_index_piezo = Button(self.frame_piezo_ovladani, text="HOME", width=10, command= self.controller.M_C_Index)#SERIAL - POSLAT INDEX - PRIJEM
+        self.BTN_index_piezo = Button(self.frame_piezo_ovladani_leve, text="HOME", width=10, command= self.controller.M_C_Index)#SERIAL - POSLAT INDEX - PRIJEM
         self.BTN_index_piezo.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
         
         
     def publish_PiezoGUI_home_done(self):
         
         #ovladani
-        self.label_piezo_precist_polohu = Label(self.frame_piezo_ovladani, text="Přečíst aktuální polohu:", bg= "white", width=20, anchor="w")
-        self.BTN_piezo_precist_polohu = Button(self.frame_piezo_ovladani, text="POLOHA", width=10, command=self.controller.M_C_precti_polohu)
-        self.label_reference_piezo = Label(self.frame_piezo_ovladani, text="Nastavit referenční pozici:", bg="white", width=20, anchor="w")
-        self.BTN_reference_piezo = Button(self.frame_piezo_ovladani, text="REFERENCE", width=10, command= self.controller.M_C_nastav_referenci)#SERIAL - POSLAT INDEX - PRIJEM
-        self.label_rychlost_piezo = Label(self.frame_piezo_ovladani, text="Nastavit rychlost posunu:", bg="white", width=20, anchor="w")
+        self.label_piezo_precist_polohu = Label(self.frame_piezo_ovladani_leve, text="Přečíst aktuální polohu:", bg= "white", width=20, anchor="w")
+        self.BTN_piezo_precist_polohu = Button(self.frame_piezo_ovladani_leve, text="POLOHA", width=10, command=self.controller.M_C_precti_polohu)
+        self.label_reference_piezo = Label(self.frame_piezo_ovladani_leve, text="Nastavit referenční pozici:", bg="white", width=20, anchor="w")
+        self.BTN_reference_piezo = Button(self.frame_piezo_ovladani_leve, text="REFERENCE", width=10, command= self.controller.M_C_nastav_referenci)#SERIAL - POSLAT INDEX - PRIJEM
+        self.label_rychlost_piezo = Label(self.frame_piezo_ovladani_leve, text="Nastavit rychlost posunu:", bg="white", width=20, anchor="w")
         self.vybrana_rychlost_piezo = StringVar()
         rychlosti = ["10", "100", "500", "1000", "2000", "3000", "4000", "5000", "6000", "8000"]
         self.vybrana_rychlost_piezo.set(rychlosti[6])
-        self.drop_rychlost_piezo = OptionMenu(self.frame_piezo_ovladani, self.vybrana_rychlost_piezo, *rychlosti, command=self.piezo_model.nastav_rychlost)
-        self.label_piezo_pohyb = Label(self.frame_piezo_ovladani, text="Velikost pohybu v μm:", bg="white", width=20, anchor="w")
-        self.entry_piezo_pohyb = Entry(self.frame_piezo_ovladani, width=10)
+        self.drop_rychlost_piezo = OptionMenu(self.frame_piezo_ovladani_leve, self.vybrana_rychlost_piezo, *rychlosti, command=self.piezo_model.nastav_rychlost)
+        
+        #ovladani - pohyb
+        self.label_piezo_pohyb = Label(self.frame_piezo_ovladani_prave, text="Nastavit velikost pohybu v μm:", bg="white", width=25, anchor="w")
+        self.entry_piezo_pohyb = Entry(self.frame_piezo_ovladani_prave, width=10)
+        self.entry_piezo_pohyb.bind("<Return>", lambda _ : self.controller.M_C_nastav_pohyb_piezo(self.entry_piezo_pohyb.get()))
+        self.label_piezo_pohyb_nastavene = Label(self.frame_piezo_ovladani_prave, text="Nastavená velikost pohybu v μm:", bg="white", width=25, anchor="w")
+        self.label_piezo_pohyb_nastavene_text = Label(self.frame_piezo_ovladani_prave, text=self.piezo_model.velikost_pohybu, bg="white", width=25, anchor="w")
+        self.frame_piezo_pohyb = Frame(self.frame_piezo_ovladani_prave, padx=5, pady=5, bg="white")
+        self.BTN_piezo_pohyb_xP = Button(self.frame_piezo_pohyb, text="X+", width=5, command=lambda: self.controller.M_C_pohyb_piezo("x"))
+        self.BTN_piezo_pohyb_xM = Button(self.frame_piezo_pohyb, text="X-", width=5, command=lambda: self.controller.M_C_pohyb_piezo("x-"))
+        self.BTN_piezo_pohyb_yP = Button(self.frame_piezo_pohyb, text="Y+", width=5, command=lambda: self.controller.M_C_pohyb_piezo("y"))
+        self.BTN_piezo_pohyb_yM = Button(self.frame_piezo_pohyb, text="Y-", width=5, command=lambda: self.controller.M_C_pohyb_piezo("y-"))
+        self.BTN_piezo_pohyb_zP = Button(self.frame_piezo_pohyb, text="Z+", width=5, command=lambda: self.controller.M_C_pohyb_piezo("z"))
+        self.BTN_piezo_pohyb_zM = Button(self.frame_piezo_pohyb, text="Z-", width=5, command=lambda: self.controller.M_C_pohyb_piezo("z-"))
         
         #pozice
         self.frame_piezo_pozice = LabelFrame(self.frame_piezo_gui,text="Pozice", padx=5, pady=5, bg="white")
@@ -203,8 +220,8 @@ class PiezoGUI():
         self.text_piezo_odpoved = Text(self.frame_piezo_prikaz, width=25, height=1)
         self.BTN_piezo_odpoved = Button(self.frame_piezo_prikaz, text="REFRESH", width=10, command=self.controller.M_C_odpoved_piezo_refresh)
         
-        self.root.geometry("950x600")
-        self.root.minsize(950, 600)
+        self.root.geometry("1000x600")
+        self.root.minsize(1000, 600)
         self.publish()
         
         
@@ -217,10 +234,20 @@ class PiezoGUI():
         self.BTN_piezo_precist_polohu.grid(row=2, column=1, padx=5, pady=5, sticky="NW")
         self.label_rychlost_piezo.grid(row=3, column=0, padx=5, pady=5, sticky="NW")
         self.drop_rychlost_piezo.grid(row=3, column=1, padx=5, pady=5, sticky="NW")
-        self.drop_rychlost_piezo.config(width=6)
-        self.label_piezo_pohyb.grid(row=1, column=3, padx=5, pady=5, sticky="NW")
-        self.entry_piezo_pohyb.grid(row=1, column=4, padx=5, pady=5, sticky="NW")
+        self.drop_rychlost_piezo.config(width=6, padx=5, pady=5)
         
+        #ovladani - pohyb
+        self.label_piezo_pohyb.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
+        self.entry_piezo_pohyb.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
+        self.label_piezo_pohyb_nastavene.grid(row=1, column=0, padx=5, pady=5, sticky="NW")
+        self.label_piezo_pohyb_nastavene_text.grid(row=1, column=1, padx=5, pady=5, sticky="NW")
+        self.frame_piezo_pohyb.grid(row=2, column=0, sticky="NW")
+        self.BTN_piezo_pohyb_xP.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
+        self.BTN_piezo_pohyb_xM.grid(row=1, column=0, padx=5, pady=5, sticky="NW")
+        self.BTN_piezo_pohyb_yP.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
+        self.BTN_piezo_pohyb_yM.grid(row=1, column=1, padx=5, pady=5, sticky="NW")
+        self.BTN_piezo_pohyb_zP.grid(row=0, column=2, padx=5, pady=5, sticky="NW")
+        self.BTN_piezo_pohyb_zM.grid(row=1, column=2, padx=5, pady=5, sticky="NW")
         
         #pozice
         self.frame_piezo_pozice.grid(row=1, column=0, padx=5, pady=10, sticky="NW")

@@ -141,6 +141,7 @@ class MainController():
         self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr: {self.piezo_model.x_ref:.3f}")
         self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr: {self.piezo_model.y_ref:.3f}")
         self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr: {self.piezo_model.z_ref:.3f}")
+        self.enable_piezo_buttons()
                                     
     def M_C_nastav_referenci(self):
         print("[NASTAVENI REFERENCE]")
@@ -155,6 +156,7 @@ class MainController():
     #PRIKAZ
     def M_C_send_msg_piezo(self, msg):
         self.piezo_model.piezo_serial.send_msg_simple(msg=msg+"\n")
+        self.disable_piezo_buttons()
         
         def callback_po_odpovedi_piezo():
             self.M_C_update_piezo_odpoved_do_GUI()
@@ -177,7 +179,37 @@ class MainController():
         self.piezo_gui.text_piezo_odpoved.insert("1.0", "")
         self.piezo_gui.text_piezo_odpoved.config(state="disabled")
     
+    def M_C_nastav_pohyb_piezo(self, pohyb):
+        self.piezo_model.nastav_pohyb_piezo(pohyb=pohyb)
+        self.piezo_gui.label_piezo_pohyb_nastavene_text.config(text=self.piezo_model.velikost_pohybu)
 
+    def M_C_pohyb_piezo(self, smer):
+        self.disable_piezo_buttons()
+        self.piezo_model.pohyb_piezo(smer)
+        
+        def callback_po_odpovedi_piezo():
+            self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu) #aktualni pozice po zastaveni
+            
+        self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
+        
+    #deaktivovani tlacitek pri pohybu    
+    def disable_piezo_buttons(self):
+        self.piezo_gui.BTN_piezo_pohyb_xP.config(state="disabled")
+        self.piezo_gui.BTN_piezo_pohyb_xM.config(state="disabled")
+        self.piezo_gui.BTN_piezo_pohyb_yP.config(state="disabled")
+        self.piezo_gui.BTN_piezo_pohyb_yM.config(state="disabled")
+        self.piezo_gui.BTN_piezo_pohyb_zP.config(state="disabled")
+        self.piezo_gui.BTN_piezo_pohyb_zM.config(state="disabled")
+        self.piezo_gui.BTN_piezo_prikaz.config(state="disabled")
 
+    #zpetne aktivovani tlacitek
+    def enable_piezo_buttons(self):
+        self.piezo_gui.BTN_piezo_pohyb_xP.config(state="normal")
+        self.piezo_gui.BTN_piezo_pohyb_xM.config(state="normal")
+        self.piezo_gui.BTN_piezo_pohyb_yP.config(state="normal")
+        self.piezo_gui.BTN_piezo_pohyb_yM.config(state="normal")
+        self.piezo_gui.BTN_piezo_pohyb_zP.config(state="normal")
+        self.piezo_gui.BTN_piezo_pohyb_zM.config(state="normal")
+        self.piezo_gui.BTN_piezo_prikaz.config(state="normal")
 
 #CONTROLLER PIEZO OVLADANI

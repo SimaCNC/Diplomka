@@ -10,6 +10,7 @@ class SerialCtrl():
         self.sync_cnt = 200
         self.ser = None
         self.status = False
+        self.lock = True
         
     #METODA PRO VYPSANI AKTUALNICH DOSTUPNYCH COM PORTU
     def getCOMlist(self):
@@ -66,15 +67,18 @@ class SerialCtrl():
     def get_msg_stream(self,send, expect_regex, callback_fun = None):
         try:
             while True:
+                self.lock = False
                 time.sleep(0.0001)
                 self.send_msg_simple(send)
                 print(f"odeslane: {send}")
                 time.sleep(0.0001)
                 msg_received = self.ser.readline().decode().strip()
                 print(f"[stream] Prijato: {msg_received}, ocekavane {expect_regex}")
-                if re.match(expect_regex, msg_received):
+                if re.match(expect_regex, msg_received):                   
                     if callback_fun:
                         callback_fun(msg_received)
+                        time.sleep(0.01)
+                    self.lock = True    
                     break #konec vlakna
                 else:
                     continue

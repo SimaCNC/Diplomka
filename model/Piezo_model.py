@@ -22,6 +22,7 @@ class Piezo_model():
         self.y_ref = 0
         self.z_ref = 0
         
+        self.velikost_pohybu = str(100)
         self.rychlost = 4000
         
         self.posledni_odpoved_piezopohony = None
@@ -43,7 +44,7 @@ class Piezo_model():
                 try:
                     raw = self.piezo_serial.ser.readline().decode(errors='ignore').strip()
                     if raw:
-                        print(f"[precti polohu] prijakot: {raw}")
+                        print(f"[precti polohu] prijato: {raw}")
                         if raw.startswith("$RP"):
                             match = re.search(r"\$RP x([-\d.]+) y([-\d.]+) z([-\d.]+)", raw)
                             if match:
@@ -87,9 +88,10 @@ class Piezo_model():
                 try:
                     self.posledni_odpoved_piezopohony = self.piezo_serial.get_msg_simple()
                     if self.posledni_odpoved_piezopohony:
-                        print(f"[odpoved]: prichozi zprava {self.posledni_odpoved_piezopohony}")                        
-                        if callback_fun:
-                            callback_fun()
+                        print(f"[odpoved]: prichozi zprava {self.posledni_odpoved_piezopohony}")                      
+                          
+                    if callback_fun:
+                        callback_fun()    
                     break
                 except Exception as e:
                     print(f"[precti polohu] chyba pri cteni nebo parsovani dat {e}")  
@@ -101,3 +103,10 @@ class Piezo_model():
     def nastav_rychlost(self, rychlost): 
         rychlost = f"SP x{rychlost} y{rychlost} z{rychlost};\n"
         self.piezo_serial.send_msg_simple(rychlost)
+        
+    def nastav_pohyb_piezo(self, pohyb):
+        self.velikost_pohybu = pohyb 
+        
+    def pohyb_piezo(self, smer):
+        posun = f"MR {smer}{self.velikost_pohybu};\n"
+        self.piezo_serial.send_msg_simple(posun)
