@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import threading
 import time
+import re
 
 from typing import TYPE_CHECKING
 
@@ -95,7 +96,7 @@ class MainController():
         print("VOLANI HOME")
         self.piezo_model.index_pozice()
         send = "RI x y z\n"
-        expect = "$RI x1 y1 z1" 
+        expect = r"^\$RI x1 y1 z1$" 
         self.piezo_model.t1 = threading.Thread(target=self.piezo_model.piezo_serial.get_msg_stream, args=(send, expect, self.M_C_Index_done,), daemon=True)
         self.piezo_model.t1.start()
     
@@ -118,7 +119,7 @@ class MainController():
             self.piezo_model.piezo_serial.send_msg_simple(msg="GT x0 y0 z0;\n")
             time.sleep(0.2)
             # self.M_C_precti_polohu()
-            self.M_C_odpoved_wait(send="RS x y z\n", expect="$RS x2 y2 z2", callback_fun = self.M_C_precti_polohu)
+            self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu)
         else:
             print("[INDEX]: Neuspesne")
         #POSLAT PRES SERIAL POZADAVEK O ZASLANI NA HOME POZICI!
@@ -157,7 +158,7 @@ class MainController():
         
         def callback_po_odpovedi_piezo():
             self.M_C_update_piezo_odpoved_do_GUI()
-            self.M_C_odpoved_wait(send="RS x y z\n", expect="$RS x2 y2 z2", callback_fun = self.M_C_precti_polohu) #aktualni pozice po zastaveni
+            self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu) #aktualni pozice po zastaveni
         
         self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
                

@@ -67,7 +67,7 @@ class ComGUI():
     def publish(self):
         #LEVE OKNA - COM PRIPOJENI
         self.frame_left.grid(row=0, column=0, rowspan=3, columnspan=3, padx=5, pady=5, sticky="NW")
-        self.frame_piezo.grid(row=0, column=0, padx=5, pady=10)
+        self.frame_piezo.grid(row=0, column=0, padx=5, pady=5)
         self.frame_MCU.grid(row=1, column=0, padx=5, pady=5)
         
         #LEVE OKNA PRVKY
@@ -179,6 +179,8 @@ class PiezoGUI():
         rychlosti = ["10", "100", "500", "1000", "2000", "3000", "4000", "5000", "6000", "8000"]
         self.vybrana_rychlost_piezo.set(rychlosti[6])
         self.drop_rychlost_piezo = OptionMenu(self.frame_piezo_ovladani, self.vybrana_rychlost_piezo, *rychlosti, command=self.piezo_model.nastav_rychlost)
+        self.label_piezo_pohyb = Label(self.frame_piezo_ovladani, text="Velikost pohybu v μm:", bg="white", width=20, anchor="w")
+        self.entry_piezo_pohyb = Entry(self.frame_piezo_ovladani, width=10)
         
         #pozice
         self.frame_piezo_pozice = LabelFrame(self.frame_piezo_gui,text="Pozice", padx=5, pady=5, bg="white")
@@ -199,7 +201,7 @@ class PiezoGUI():
         self.BTN_piezo_prikaz = Button(self.frame_piezo_prikaz, text="POSLAT", width=10, command= lambda: self.controller.M_C_send_msg_piezo(self.entry_piezo_prikaz.get()))
         self.label_piezo_odpoved = Label(self.frame_piezo_prikaz, text="Odpověď piezopohony:", bg="white", width=20, anchor="w")
         self.text_piezo_odpoved = Text(self.frame_piezo_prikaz, width=25, height=1)
-        self.BTN_piezo_odpoved = Button(self.frame_piezo_prikaz, text="REFRESH", width=10, command=self.controller.M_C_odpoved_piezo_refresh)#NENI HOTOVE
+        self.BTN_piezo_odpoved = Button(self.frame_piezo_prikaz, text="REFRESH", width=10, command=self.controller.M_C_odpoved_piezo_refresh)
         
         self.root.geometry("950x600")
         self.root.minsize(950, 600)
@@ -215,7 +217,10 @@ class PiezoGUI():
         self.BTN_piezo_precist_polohu.grid(row=2, column=1, padx=5, pady=5, sticky="NW")
         self.label_rychlost_piezo.grid(row=3, column=0, padx=5, pady=5, sticky="NW")
         self.drop_rychlost_piezo.grid(row=3, column=1, padx=5, pady=5, sticky="NW")
-        self.drop_rychlost_piezo.config(width=10)
+        self.drop_rychlost_piezo.config(width=6)
+        self.label_piezo_pohyb.grid(row=1, column=3, padx=5, pady=5, sticky="NW")
+        self.entry_piezo_pohyb.grid(row=1, column=4, padx=5, pady=5, sticky="NW")
+        
         
         #pozice
         self.frame_piezo_pozice.grid(row=1, column=0, padx=5, pady=10, sticky="NW")

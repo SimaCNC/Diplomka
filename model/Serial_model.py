@@ -1,6 +1,7 @@
 import serial.tools.list_ports
 import threading
 import time
+import re
 
 class SerialCtrl():
     
@@ -62,16 +63,16 @@ class SerialCtrl():
         except Exception as e:
             print(f"[serial]: chyba pri cteni dat: {e}")
             
-    def get_msg_stream(self,send, expect, callback_fun = None):
+    def get_msg_stream(self,send, expect_regex, callback_fun = None):
         try:
             while True:
-                time.sleep(0.05)
+                time.sleep(0.0001)
                 self.send_msg_simple(send)
                 print(f"odeslane: {send}")
-                time.sleep(0.05)
+                time.sleep(0.0001)
                 msg_received = self.ser.readline().decode().strip()
-                print(f"[stream] Prijato: {msg_received}, ocekavane {expect}")
-                if msg_received == expect:
+                print(f"[stream] Prijato: {msg_received}, ocekavane {expect_regex}")
+                if re.match(expect_regex, msg_received):
                     if callback_fun:
                         callback_fun(msg_received)
                     break #konec vlakna
