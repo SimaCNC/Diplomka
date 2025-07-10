@@ -20,6 +20,9 @@ class MainController():
         self.com = com
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
+        self.pocet_frame = 0
+        self.piezo = False
+        self.mcu = False
         
 #----OVLADANI INIT
     def M_init_view_data(self):
@@ -73,12 +76,16 @@ class MainController():
                 InfoMsg = f"MCU\nÚspěšně připojeno pomocí sériové komunikace k {self.com.vybrany_com_MCU.get()}"
                 messagebox.showinfo("MCU info", InfoMsg)
                 
+                from view.main_view import McuGUI
+                self.mcu_gui = McuGUI(self.root, self, self.mcu_model)
+                
             else:
                 ErrorMsg = f"MCU\nChyba v připojení pomocí sériové komunikace k {self.com.vybrany_com_MCU.get()}"
                 messagebox.showerror("MCU CHYBA", ErrorMsg)
         
         else:
             self.mcu_model.mcu_serial.SerialClose()
+            self.mcu_gui.McuGUIClose()
             InfoMsg = f"MCU\nÚspěšně odpojeno pomocí sériové komunikace k {self.com.vybrany_com_MCU.get()}"
             messagebox.showinfo("MCU info", InfoMsg)  
             self.com.btn_connect_MCU["text"] = "Připojit"

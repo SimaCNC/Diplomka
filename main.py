@@ -30,7 +30,6 @@ com_view = ComGUI(root_view.root, controller, piezo_model, mcu_model)
 
 #napojeni controlleru na com_view
 controller.com = com_view
-controller.M_init_view_data()
 
 
 

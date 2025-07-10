@@ -3,8 +3,6 @@ from controller.main_controller import MainController
 from typing import TYPE_CHECKING
 
 
-
-
 if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
@@ -20,7 +18,33 @@ class RootGUI():
         self.root.geometry("375x290")
         self.root.config(bg="white")
         
+        menu = Menu(self.root)
+        self.root.config(menu=menu)
         
+        #Hlavni menu
+        def hlavni_menu_gui():
+            pass
+        
+        hlavni_menu = Menu(menu)
+        
+        menu.add_cascade(label="Připojení", menu=hlavni_menu, command=hlavni_menu_gui)
+        
+        
+        #Kalibrace menu
+        def kalibrace_napoveda():
+            pass
+        
+        def kalibrace_kalibrovat():
+            pass
+        
+        kalibrace_menu = Menu(menu)
+        
+        menu.add_cascade(label="Kalibrace", menu=kalibrace_menu)
+        kalibrace_menu.add_command(label="Nápověda", command=kalibrace_napoveda)
+        kalibrace_menu.add_command(label="Kalibrovat", command=kalibrace_kalibrovat)
+        
+        
+        #zavreni okna
         self.root.protocol("WM_DELETE_WINDOW", self.window_exit)
     
     def window_exit(self):
@@ -31,6 +55,7 @@ class RootGUI():
         self.root.destroy()
         print("Zavirani okna a vypnuti aplikace")
         
+       
         
 #SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY - LEVE HORNI OKNO APLIKACE, trida ComGui()     
 class ComGUI():
@@ -39,6 +64,7 @@ class ComGUI():
         self.controller = controller
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
+        self.controller.window_num = 1
         
         #LEVE OKNA - COM PRIPOJENI 
         self.frame_left = LabelFrame(self.root, text="COM manažer připojení", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
@@ -66,7 +92,7 @@ class ComGUI():
       
     def publish(self):
         #LEVE OKNA - COM PRIPOJENI
-        self.frame_left.grid(row=0, column=0, rowspan=3, columnspan=3, padx=5, pady=5, sticky="NW")
+        self.frame_left.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
         self.frame_piezo.grid(row=0, column=0, padx=5, pady=5)
         self.frame_MCU.grid(row=1, column=0, padx=5, pady=5)
         
@@ -147,24 +173,29 @@ class ComGUI():
     
 #SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY - LEVE HORNI OKNO APLIKACE, trida ComGui()     
     
-    
 class PiezoGUI():
     def __init__(self, root: 'Tk', controller : 'MainController' ,piezo_model : 'Piezo_model'):
         self.root = root   
         self.controller = controller
         self.piezo_model = piezo_model
+        self.controller.piezo = True
         
         self.frame_piezo_gui = LabelFrame(self.root, text="Piezopohony", padx=5, pady=5, bg="white", relief="groove",bd=5)
-        self.frame_piezo_gui.grid(row=0, column=4, rowspan=3, columnspan=3, padx=5, pady=5, sticky="NW")
-        self.root.geometry("800x400")
-        self.root.minsize(800, 400)
+        self.frame_piezo_gui.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
+        
+        if self.controller.mcu is False:
+            self.root.geometry("1000x600")        
+            self.root.minsize(1000, 600)
+        else:
+            self.root.geometry("1500x800")
+            self.root.minsize(1500, 800)
         #ovladani
         self.frame_piezo_ovladani = LabelFrame(self.frame_piezo_gui,text="Ovládání" ,padx=5, pady=5, bg="white")
-        self.frame_piezo_ovladani.grid(row=0, column=0, padx=5, pady=10, sticky="NW") 
+        self.frame_piezo_ovladani.grid(row=0, column=0, padx=5, pady=5, sticky="NW") 
         self.frame_piezo_ovladani_leve = Frame(self.frame_piezo_ovladani,padx=5, pady=5, bg="white")
-        self.frame_piezo_ovladani_leve.grid(row=0, column=0, padx=5, pady=10, sticky="NW") 
+        self.frame_piezo_ovladani_leve.grid(row=0, column=0, padx=5, pady=5, sticky="NW") 
         self.frame_piezo_ovladani_prave = Frame(self.frame_piezo_ovladani,padx=5, pady=5, bg="white")
-        self.frame_piezo_ovladani_prave.grid(row=0, column=1, padx=5, pady=10, sticky="NW") 
+        self.frame_piezo_ovladani_prave.grid(row=0, column=1, padx=5, pady=5, sticky="NW") 
         
         self.label_index_piezo = Label(self.frame_piezo_ovladani_leve, text="Home pozice:", bg="white", width=20, anchor="w")
         self.label_index_piezo.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
@@ -190,7 +221,7 @@ class PiezoGUI():
         self.entry_piezo_pohyb = Entry(self.frame_piezo_ovladani_prave, width=10)
         self.entry_piezo_pohyb.bind("<Return>", lambda _ : self.controller.M_C_nastav_pohyb_piezo(self.entry_piezo_pohyb.get()))
         self.label_piezo_pohyb_nastavene = Label(self.frame_piezo_ovladani_prave, text="Nastavená velikost pohybu v μm:", bg="white", width=25, anchor="w")
-        self.label_piezo_pohyb_nastavene_text = Label(self.frame_piezo_ovladani_prave, text=self.piezo_model.velikost_pohybu, bg="white", width=25, anchor="w")
+        self.label_piezo_pohyb_nastavene_text = Label(self.frame_piezo_ovladani_prave, text=self.piezo_model.velikost_pohybu, bg="white", width=5, anchor="w")
         self.frame_piezo_pohyb = Frame(self.frame_piezo_ovladani_prave, padx=5, pady=5, bg="white")
         self.BTN_piezo_pohyb_xP = Button(self.frame_piezo_pohyb, text="X+", width=5, command=lambda: self.controller.M_C_pohyb_piezo("x"))
         self.BTN_piezo_pohyb_xM = Button(self.frame_piezo_pohyb, text="X-", width=5, command=lambda: self.controller.M_C_pohyb_piezo("x-"))
@@ -220,8 +251,13 @@ class PiezoGUI():
         self.text_piezo_odpoved = Text(self.frame_piezo_prikaz, width=25, height=1)
         self.BTN_piezo_odpoved = Button(self.frame_piezo_prikaz, text="REFRESH", width=10, command=self.controller.M_C_odpoved_piezo_refresh)
         
-        self.root.geometry("1000x600")
-        self.root.minsize(1000, 600)
+        if self.controller.mcu is False:
+            self.root.geometry("1000x600")        
+            self.root.minsize(1000, 600)
+        else:
+            self.root.geometry("1500x800")
+            self.root.minsize(1500, 800)
+        
         self.publish()
         
         
@@ -271,12 +307,49 @@ class PiezoGUI():
         self.BTN_piezo_odpoved.grid(row=1, column=2, padx=5, pady=5, sticky="NW")
         
     def PiezoGUIClose(self):
+        self.controller.piezo = False
         for widget in self.frame_piezo_gui.winfo_children():
             widget.destroy()
+        self.controller.pocet_frame -= 1
         self.frame_piezo_gui.destroy()
-        self.root.geometry("375x290")
-        self.root.minsize(375, 290)   
+        if self.controller.mcu:
+            self.root.geometry("800x400")
+            self.root.minsize(800, 400)
+        else:
+            self.root.geometry("375x290")
+            self.root.minsize(375, 290)   
         
+class McuGUI():
+    
+    def __init__(self, root: 'Tk', controller : 'MainController' ,mcu_model : 'MCU_model'):
+        self.root = root
+        self.controller = controller
+        self.mcu_model = mcu_model
+        
+        self.controller.mcu = True
+
+        self.frame_MCU_gui = LabelFrame(self.root, text="MCU", padx=5, pady=5, bg="white", relief="groove",bd=5)
+        self.frame_MCU_gui.grid(row=0, column=2, padx=5, pady=5, sticky="NW")
+
+        if self.controller.piezo is False:
+            self.root.geometry("800x400")
+            self.root.minsize(800, 400)
+        else:
+            self.root.geometry("1500x800")
+            self.root.minsize(1500, 800)
+            
+    def McuGUIClose(self):
+        self.controller.mcu = False
+        for widget in self.frame_MCU_gui.winfo_children():
+            widget.destroy()
+        self.controller.pocet_frame -= 1
+        self.frame_MCU_gui.destroy()
+        if self.controller.piezo:
+            self.root.geometry("1000x600")        
+            self.root.minsize(1000, 600)
+        else:
+            self.root.geometry("375x290")
+            self.root.minsize(375, 290)   
         
 if __name__ == "__main__":
     print("TOTO NENI HLAVNI APLIKACE")
