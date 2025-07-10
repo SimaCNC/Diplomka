@@ -28,7 +28,7 @@ controller = MainController(root_view.root, None, piezo_model, mcu_model)
 #vytvoreni com_view a prirazeni controlleru
 com_view = ComGUI(root_view.root, controller, piezo_model, mcu_model)
 
-#napojeni controlleru na com_view
+#napojeni controlleru na com_views
 controller.com = com_view
 
 
