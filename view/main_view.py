@@ -1,12 +1,11 @@
 from tkinter import *
-from controller.main_controller import MainController
 from typing import TYPE_CHECKING
-
 
 if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
-
+    from controller.main_controller import MainController
+    
 class RootGUI():
     
     def __init__(self):
@@ -14,39 +13,41 @@ class RootGUI():
         
         self.root.iconbitmap('icon/logo_uprava2.ico')
         self.root.title("Kalibrace snímače malých posunutí")
-        self.root.minsize(375, 290)
-        self.root.geometry("375x290")
+        self.root.geometry("1200x800")
         self.root.config(bg="white")
         
-        menu = Menu(self.root)
-        self.root.config(menu=menu)
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+        self.container = Frame(self.root)
+        self.container.grid(row=0, column=0, sticky="nsew")
+        self.container.grid_rowconfigure(0, weight=1)
+        self.container.grid_columnconfigure(0, weight=1)
         
-        #Hlavni menu
-        def hlavni_menu_gui():
-            pass
-        
-        hlavni_menu = Menu(menu)
-        
-        menu.add_cascade(label="Připojení", menu=hlavni_menu, command=hlavni_menu_gui)
-        
-        
-        #Kalibrace menu
-        def kalibrace_napoveda():
-            pass
-        
-        def kalibrace_kalibrovat():
-            pass
-        
-        kalibrace_menu = Menu(menu)
-        
-        menu.add_cascade(label="Kalibrace", menu=kalibrace_menu)
-        kalibrace_menu.add_command(label="Nápověda", command=kalibrace_napoveda)
-        kalibrace_menu.add_command(label="Kalibrovat", command=kalibrace_kalibrovat)
-        
+        self.frames = {} #ukladani jednotlivych pohledu
         
         #zavreni okna
         self.root.protocol("WM_DELETE_WINDOW", self.window_exit)
-    
+        
+        #vytvoreni menu
+        self.menu = Menu(self.root)
+        self.menu.add_command(label="Připojení", command=None)
+        self.menu.add_command(label="Konec", command=self.window_exit)
+        self.menu.add_command(label="Kalibrace", command= lambda: self.show_frame("kalibrace"))
+        
+        self.root.config(menu=self.menu)
+        
+    def add_frame(self, name, frame_class, *args):
+        frame : Frame = frame_class(self.container, *args)
+        self.frames[name] = frame 
+        frame.grid(row = 0, column = 0, sticky = "nsew")
+            
+    def show_frame(self, name):
+        if name in self.frames:
+            self.frames[name].tkraise()
+        else:
+            print(f"[frame] Frame '{name}' NEEXISTUJE")
+        
     def window_exit(self):
         # zavrit = messagebox.askyesno("Ukončení aplikace", "Upravdu si přejete ukončit aplikaci?")
         # if zavrit:
@@ -56,20 +57,35 @@ class RootGUI():
         print("Zavirani okna a vypnuti aplikace")
         
        
+#SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY    
+#PRVNI OKNO APLIKACE - PRIPOJENI A OVLADANI SUBSYSTEMU
+class MainPage(Frame):
+    def __init__(self, parent, controller : 'MainController', piezo_model, mcu_model):
+        super().__init__(parent)
+        self.config(bg="white")
+
+        self.com_gui : LabelFrame = ComGUI(self, controller, piezo_model, mcu_model)
+        self.com_gui.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
         
-#SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY - LEVE HORNI OKNO APLIKACE, trida ComGui()     
-class ComGUI():
-    def __init__(self, root : 'Tk', controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
-        self.root = root
+        self.piezo_gui : LabelFrame = PiezoGUI(self, controller, piezo_model)
+        self.piezo_gui.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
+        
+        self.mcu_gui : LabelFrame = McuGUI(self, controller, mcu_model)
+        self.mcu_gui.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
+        
+        self.controler = controller
+        self.controler.set_main_page(self)
+        
+class ComGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
+        super().__init__(parent, text="COM manažer připojení", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
         self.controller = controller
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
-        self.controller.window_num = 1
         
         #LEVE OKNA - COM PRIPOJENI 
-        self.frame_left = LabelFrame(self.root, text="COM manažer připojení", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
-        self.frame_piezo = LabelFrame(self.frame_left, text="Piezpohony", padx=5, pady=5, bg="white")
-        self.frame_MCU = LabelFrame(self.frame_left, text="MCU", padx=5, pady=5, bg="white")
+        self.frame_piezo = LabelFrame(self, text="Piezpohony", padx=5, pady=5, bg="white")
+        self.frame_MCU = LabelFrame(self, text="MCU", padx=5, pady=5, bg="white")
         
         #LEVE OKNA - PRVKY
         self.label_com_piezo = Label(self.frame_piezo, text="Dostupné porty:", bg="white", width=15, anchor="w")
@@ -92,7 +108,7 @@ class ComGUI():
       
     def publish(self):
         #LEVE OKNA - COM PRIPOJENI
-        self.frame_left.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
+        # self.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
         self.frame_piezo.grid(row=0, column=0, padx=5, pady=5)
         self.frame_MCU.grid(row=1, column=0, padx=5, pady=5)
         
@@ -128,7 +144,10 @@ class ComGUI():
     def Com_option_piezo(self):
         self.piezo_model.piezo_serial.getCOMlist()
         self.vybrany_com_piezo = StringVar()
-        self.vybrany_com_piezo.set(self.piezo_model.piezo_serial.com_list[0])
+        if self.piezo_model.piezo_serial.com_list:
+            self.vybrany_com_piezo.set(self.piezo_model.piezo_serial.com_list[0])
+        else:
+            self.vybrany_com_piezo.set("-")
         self.drop_com_piezo = OptionMenu(self.frame_piezo, self.vybrany_com_piezo, *self.piezo_model.piezo_serial.com_list, command=self.connect_ctrl_piezo)
         self.drop_com_piezo.config(width=10)
         
@@ -173,24 +192,18 @@ class ComGUI():
     
 #SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY - LEVE HORNI OKNO APLIKACE, trida ComGui()     
     
-class PiezoGUI():
-    def __init__(self, root: 'Tk', controller : 'MainController' ,piezo_model : 'Piezo_model'):
-        self.root = root   
+class PiezoGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController' ,piezo_model : 'Piezo_model'):
+        super().__init__(parent, text="Piezopohony", padx=5, pady=5, bg="white", relief="groove",bd=5)
         self.controller = controller
         self.piezo_model = piezo_model
         self.controller.piezo = True
         
-        self.frame_piezo_gui = LabelFrame(self.root, text="Piezopohony", padx=5, pady=5, bg="white", relief="groove",bd=5)
-        self.frame_piezo_gui.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
+
+        self.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
         
-        if self.controller.mcu is False:
-            self.root.geometry("1000x600")        
-            self.root.minsize(1000, 600)
-        else:
-            self.root.geometry("1500x800")
-            self.root.minsize(1500, 800)
         #ovladani
-        self.frame_piezo_ovladani = LabelFrame(self.frame_piezo_gui,text="Ovládání" ,padx=5, pady=5, bg="white")
+        self.frame_piezo_ovladani = LabelFrame(self,text="Ovládání" ,padx=5, pady=5, bg="white")
         self.frame_piezo_ovladani.grid(row=0, column=0, padx=5, pady=5, sticky="NW") 
         self.frame_piezo_ovladani_leve = Frame(self.frame_piezo_ovladani,padx=5, pady=5, bg="white")
         self.frame_piezo_ovladani_leve.grid(row=0, column=0, padx=5, pady=5, sticky="NW") 
@@ -231,7 +244,7 @@ class PiezoGUI():
         self.BTN_piezo_pohyb_zM = Button(self.frame_piezo_pohyb, text="Z-", width=5, command=lambda: self.controller.M_C_pohyb_piezo("z-"))
         
         #pozice
-        self.frame_piezo_pozice = LabelFrame(self.frame_piezo_gui,text="Pozice", padx=5, pady=5, bg="white")
+        self.frame_piezo_pozice = LabelFrame(self,text="Pozice", padx=5, pady=5, bg="white")
         self.label_pozice_home_piezo = Label(self.frame_piezo_pozice, text="Pozice od home:", padx=5, pady=5, bg="white", width=15,)
         self.label_pozice_homeX_piezo = Label(self.frame_piezo_pozice, text="Xh:", padx=5, pady=5, bg="white", width=10)
         self.label_pozice_homeY_piezo = Label(self.frame_piezo_pozice, text="Yh:", padx=5, pady=5, bg="white", width=10)
@@ -242,7 +255,7 @@ class PiezoGUI():
         self.label_pozice_referenceZ_piezo = Label(self.frame_piezo_pozice, text="Zr:", padx=5, pady=5, bg="white", width=10,)
         
         #prikaz
-        self.frame_piezo_prikaz = LabelFrame(self.frame_piezo_gui,text="Příkaz", padx=5, pady=5, bg="white")
+        self.frame_piezo_prikaz = LabelFrame(self,text="Příkaz", padx=5, pady=5, bg="white")
         self.label_piezo_prikaz = Label(self.frame_piezo_prikaz, text="Příkaz k odeslání:", bg="white", width=20, anchor="w")
         self.entry_piezo_prikaz = Entry(self.frame_piezo_prikaz, width=33,)
         self.entry_piezo_prikaz.bind("<Return>", lambda _ : self.controller.M_C_send_msg_piezo(self.entry_piezo_prikaz.get()))
@@ -250,13 +263,6 @@ class PiezoGUI():
         self.label_piezo_odpoved = Label(self.frame_piezo_prikaz, text="Odpověď piezopohony:", bg="white", width=20, anchor="w")
         self.text_piezo_odpoved = Text(self.frame_piezo_prikaz, width=25, height=1)
         self.BTN_piezo_odpoved = Button(self.frame_piezo_prikaz, text="REFRESH", width=10, command=self.controller.M_C_odpoved_piezo_refresh)
-        
-        if self.controller.mcu is False:
-            self.root.geometry("1000x600")        
-            self.root.minsize(1000, 600)
-        else:
-            self.root.geometry("1500x800")
-            self.root.minsize(1500, 800)
         
         self.publish()
         
@@ -308,50 +314,29 @@ class PiezoGUI():
         
     def PiezoGUIClose(self):
         self.controller.piezo = False
-        for widget in self.frame_piezo_gui.winfo_children():
+        for widget in self.winfo_children():
             widget.destroy()
-        self.controller.pocet_frame -= 1
-        self.frame_piezo_gui.destroy()
-        if self.controller.mcu:
-            self.root.geometry("800x400")
-            self.root.minsize(800, 400)
-        else:
-            self.root.geometry("375x290")
-            self.root.minsize(375, 290)   
+        self.destroy()
         
-class McuGUI():
-    
-    def __init__(self, root: 'Tk', controller : 'MainController' ,mcu_model : 'MCU_model'):
-        self.root = root
+class McuGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController' ,mcu_model : 'MCU_model'):
+        super().__init__(parent, text="MCU", padx=5, pady=5, bg="white", relief="groove",bd=5)
         self.controller = controller
         self.mcu_model = mcu_model
         
         self.controller.mcu = True
 
-        self.frame_MCU_gui = LabelFrame(self.root, text="MCU", padx=5, pady=5, bg="white", relief="groove",bd=5)
-        self.frame_MCU_gui.grid(row=0, column=2, padx=5, pady=5, sticky="NW")
+        # self.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
 
-        if self.controller.piezo is False:
-            self.root.geometry("800x400")
-            self.root.minsize(800, 400)
-        else:
-            self.root.geometry("1500x800")
-            self.root.minsize(1500, 800)
             
     def McuGUIClose(self):
         self.controller.mcu = False
-        for widget in self.frame_MCU_gui.winfo_children():
+        for widget in self.winfo_children():
             widget.destroy()
-        self.controller.pocet_frame -= 1
-        self.frame_MCU_gui.destroy()
-        if self.controller.piezo:
-            self.root.geometry("1000x600")        
-            self.root.minsize(1000, 600)
-        else:
-            self.root.geometry("375x290")
-            self.root.minsize(375, 290)   
+        self.destroy()
         
+
+    
 if __name__ == "__main__":
     print("TOTO NENI HLAVNI APLIKACE")
     print("HLAVNI APLIKACE JE V SOUBORU main.py")
-          

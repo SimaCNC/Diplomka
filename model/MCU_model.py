@@ -9,3 +9,4 @@ class MCU_model():
         
         self.teplota_okoli = None
         self.typ_mereni = None #typ 1 - oscilator, typ 2 - A/D
+        

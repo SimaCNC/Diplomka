@@ -3,33 +3,38 @@ from tkinter import messagebox
 import threading
 import time
 import re
-
+from view.main_view import MainPage
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from view.main_view import RootGUI, ComGUI
+    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
-    from view.main_view import PiezoGUI
     import tkinter as Tk
     
 class MainController():
     
-    def __init__(self, root : 'Tk', com : 'ComGUI', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
+    def __init__(self, root : 'Tk', view: 'RootGUI', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
         self.root = root
-        self.com = com
+        self.view = view
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
-        self.pocet_frame = 0
         self.piezo = False
         self.mcu = False
+        self.main_page = None
         
-#----OVLADANI INIT
-    def M_init_view_data(self):
-        pass
-#----OVLADANI INIT   
+#PRIRAZOVANI POHLEDU
+    def set_main_page(self, main_page : 'MainPage'):
+        self.main_page = main_page
+        self.com : 'ComGUI' = main_page.com_gui
+        self.piezo_gui : 'PiezoGUI' = main_page.piezo_gui
+        self.mcu_gui : 'McuGUI'= main_page.mcu_gui 
+    #Prvotni prirazeni pohledu - Main page       
+    def setup_gui(self):
+        self.view.add_frame("main", MainPage, self, self.piezo_model, self.mcu_model)
+        self.view.show_frame("main")
         
-#CONTROLLER PIEZO A MCU PRIPOJENI K COM SERIOVA KOMUNIKACE, trida ComGui() 36  
+#M_C GUI PRO MAIN POHLED
     def M_serial_connect_piezo(self):
         if self.com.btn_connect_piezo["text"] in "Připojit" :
             #Zacatek seriove komunikace - pripojeni metodou SerialOpen
@@ -43,15 +48,9 @@ class MainController():
                 self.com.drop_com_piezo["state"] = "disable"
                 InfoMsg = f"Piezo\nÚspěšně připojeno pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
                 messagebox.showinfo("Piezo info", InfoMsg)
-                
-                #Vytvoreni PiezoGUI:
-                from view.main_view import PiezoGUI
-                self.piezo_gui = PiezoGUI(self.root, self, self.piezo_model)
-                
             else:
                 ErrorMsg = f"Piezo\nChyba v připojení pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
-                messagebox.showerror("Piezo CHYBA", ErrorMsg)
-        
+                messagebox.showerror("Piezo CHYBA", ErrorMsg)       
         else:
             self.piezo_model.piezo_serial.SerialClose()
             self.piezo_gui.PiezoGUIClose()
@@ -75,14 +74,9 @@ class MainController():
                 self.com.drop_com_MCU["state"] = "disable"
                 InfoMsg = f"MCU\nÚspěšně připojeno pomocí sériové komunikace k {self.com.vybrany_com_MCU.get()}"
                 messagebox.showinfo("MCU info", InfoMsg)
-                
-                from view.main_view import McuGUI
-                self.mcu_gui = McuGUI(self.root, self, self.mcu_model)
-                
             else:
                 ErrorMsg = f"MCU\nChyba v připojení pomocí sériové komunikace k {self.com.vybrany_com_MCU.get()}"
-                messagebox.showerror("MCU CHYBA", ErrorMsg)
-        
+                messagebox.showerror("MCU CHYBA", ErrorMsg)       
         else:
             self.mcu_model.mcu_serial.SerialClose()
             self.mcu_gui.McuGUIClose()
@@ -92,11 +86,7 @@ class MainController():
             self.com.btn_refresh_MCU["state"] = "active"
             self.com.drop_bd_MCU["state"] = "active"
             self.com.drop_com_MCU["state"] = "active"
-            
-#CONTROLLER PIEZO A MCU PRIPOJENI K COM SERIOVA KOMUNIKACE, trida ComGui()   
 
-
-#CONTROLLER PIEZO OVLADANI, trida PiezoGUI() 151
     #obas je pouziti slov/promennych home a index matouci - jedna se o totez jsou to synonyma
     #OVLADANI
     def M_C_Index(self):
@@ -129,7 +119,7 @@ class MainController():
             self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu)
         else:
             print("[INDEX]: Neuspesne")
-        #POSLAT PRES SERIAL POZADAVEK O ZASLANI NA HOME POZICI!
+        #POSLAT PRES SERIAL POZADAVEK O ZASLANI NA HOME POZICI! - Zatim nedodelane, netreba
     
     #POZICE
     def M_C_precti_polohu(self, msg = None):
@@ -199,7 +189,7 @@ class MainController():
             
         self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
         
-    #deaktivovani tlacitek pri pohybu    
+    #deaktivovani tlacitek pri pohybu - mozna implementovat do view a pak jen funkce volat z controlleru    
     def disable_piezo_buttons(self):
         self.piezo_gui.BTN_piezo_pohyb_xP.config(state="disabled")
         self.piezo_gui.BTN_piezo_pohyb_xM.config(state="disabled")

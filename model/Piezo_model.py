@@ -60,7 +60,7 @@ class Piezo_model():
                                 if callback_fun:
                                     callback_fun()
                             else:
-                                print("[precti polohu] format prijateho retezce neodpovida ocekavenemu")
+                                print("[precti polohu] format prijateho retezce neodpovida ocekavanemu")
                             break
                 except Exception as e:
                     print(f"[precti polohu] chyba pri cteni nebo parsovani dat {e}")  
@@ -110,3 +110,9 @@ class Piezo_model():
     def pohyb_piezo(self, smer):
         posun = f"MR {smer}{self.velikost_pohybu};\n"
         self.piezo_serial.send_msg_simple(posun)
+
+    def read_serial_data(self):
+        try:
+            data = self.ser.readline().decode().strip()
+        except AttributeError:
+            print("seriovy port neni inicializovany")
