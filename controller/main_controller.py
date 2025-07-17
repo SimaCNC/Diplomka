@@ -3,7 +3,7 @@ from tkinter import messagebox
 import threading
 import time
 import re
-from view.main_view import MainPage
+from view.main_view import MainPage, KalibracePage
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,8 +12,7 @@ if TYPE_CHECKING:
     from model.MCU_model import MCU_model
     import tkinter as Tk
     
-class MainController():
-    
+class MainController():   
     def __init__(self, root : 'Tk', view: 'RootGUI', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
         self.root = root
         self.view = view
@@ -29,9 +28,15 @@ class MainController():
         self.com : 'ComGUI' = main_page.com_gui
         self.piezo_gui : 'PiezoGUI' = main_page.piezo_gui
         self.mcu_gui : 'McuGUI'= main_page.mcu_gui 
-    #Prvotni prirazeni pohledu - Main page       
+    
+    def set_kalibrace_page(self, kalibrace_page : 'KalibracePage'):
+        self.kalibrace_page = kalibrace_page
+    
+#Vytvoreni pohledu a definovani prvniho okna - Pripojeni = main      
     def setup_gui(self):
         self.view.add_frame("main", MainPage, self, self.piezo_model, self.mcu_model)
+        self.view.add_frame("kalibrace", KalibracePage, self, self.piezo_model, self.mcu_model)
+        #self.view.add_frame("nápověda")
         self.view.show_frame("main")
         
 #M_C GUI PRO MAIN POHLED
@@ -46,6 +51,7 @@ class MainController():
                 self.com.btn_refresh_piezo["state"] = "disable"
                 self.com.drop_bd_piezo["state"] = "disable"
                 self.com.drop_com_piezo["state"] = "disable"
+                self.piezo_gui.PiezoGUIOpen()
                 InfoMsg = f"Piezo\nÚspěšně připojeno pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
                 messagebox.showinfo("Piezo info", InfoMsg)
             else:
@@ -72,6 +78,7 @@ class MainController():
                 self.com.btn_refresh_MCU["state"] = "disable"
                 self.com.drop_bd_MCU["state"] = "disable"
                 self.com.drop_com_MCU["state"] = "disable"
+                self.mcu_gui.McuGUIOpen()
                 InfoMsg = f"MCU\nÚspěšně připojeno pomocí sériové komunikace k {self.com.vybrany_com_MCU.get()}"
                 messagebox.showinfo("MCU info", InfoMsg)
             else:
@@ -96,6 +103,7 @@ class MainController():
         expect = r"^\$RI x1 y1 z1$" 
         self.piezo_model.t1 = threading.Thread(target=self.piezo_model.piezo_serial.get_msg_stream, args=(send, expect, self.M_C_Index_done,), daemon=True)
         self.piezo_model.t1.start()
+        self.piezo_gui.disable_children(self.piezo_gui)
     
     def M_C_odpoved_wait(self, send, expect, callback_fun = None):
         send = send
@@ -138,7 +146,7 @@ class MainController():
         self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr: {self.piezo_model.x_ref:.3f}")
         self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr: {self.piezo_model.y_ref:.3f}")
         self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr: {self.piezo_model.z_ref:.3f}")
-        self.enable_piezo_buttons()
+        self.M_C_enable_piezo_buttons()
                                     
     def M_C_nastav_referenci(self):
         print("[NASTAVENI REFERENCE]")
@@ -153,7 +161,7 @@ class MainController():
     #PRIKAZ
     def M_C_send_msg_piezo(self, msg):
         self.piezo_model.piezo_serial.send_msg_simple(msg=msg+"\n")
-        self.disable_piezo_buttons()
+        self.M_C_disable_piezo_buttons()
         
         def callback_po_odpovedi_piezo():
             self.M_C_update_piezo_odpoved_do_GUI()
@@ -181,7 +189,7 @@ class MainController():
         self.piezo_gui.label_piezo_pohyb_nastavene_text.config(text=self.piezo_model.velikost_pohybu)
 
     def M_C_pohyb_piezo(self, smer):
-        self.disable_piezo_buttons()
+        self.M_C_disable_piezo_buttons()
         self.piezo_model.pohyb_piezo(smer)
         
         def callback_po_odpovedi_piezo():
@@ -190,23 +198,12 @@ class MainController():
         self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
         
     #deaktivovani tlacitek pri pohybu - mozna implementovat do view a pak jen funkce volat z controlleru    
-    def disable_piezo_buttons(self):
-        self.piezo_gui.BTN_piezo_pohyb_xP.config(state="disabled")
-        self.piezo_gui.BTN_piezo_pohyb_xM.config(state="disabled")
-        self.piezo_gui.BTN_piezo_pohyb_yP.config(state="disabled")
-        self.piezo_gui.BTN_piezo_pohyb_yM.config(state="disabled")
-        self.piezo_gui.BTN_piezo_pohyb_zP.config(state="disabled")
-        self.piezo_gui.BTN_piezo_pohyb_zM.config(state="disabled")
-        self.piezo_gui.BTN_piezo_prikaz.config(state="disabled")
+    def M_C_disable_piezo_buttons(self):
+        self.piezo_gui.disable_piezo_buttons()
 
     #zpetne aktivovani tlacitek
-    def enable_piezo_buttons(self):
-        self.piezo_gui.BTN_piezo_pohyb_xP.config(state="normal")
-        self.piezo_gui.BTN_piezo_pohyb_xM.config(state="normal")
-        self.piezo_gui.BTN_piezo_pohyb_yP.config(state="normal")
-        self.piezo_gui.BTN_piezo_pohyb_yM.config(state="normal")
-        self.piezo_gui.BTN_piezo_pohyb_zP.config(state="normal")
-        self.piezo_gui.BTN_piezo_pohyb_zM.config(state="normal")
-        self.piezo_gui.BTN_piezo_prikaz.config(state="normal")
+    def M_C_enable_piezo_buttons(self):
+        self.piezo_gui.enable_children(self.piezo_gui)
+        # self.piezo_gui.enable_piezo_buttons()
 
 #CONTROLLER PIEZO OVLADANI

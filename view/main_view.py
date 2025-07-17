@@ -6,14 +6,17 @@ if TYPE_CHECKING:
     from model.MCU_model import MCU_model
     from controller.main_controller import MainController
     
+#-----------------------------------------------------     
+#KORENOVE OKNO - VYTVORENI INSTANCE TK V ATRIBUTU ROOT    
+#----------------------------------------------------- 
+
 class RootGUI():
-    
     def __init__(self):
         self.root : Tk = Tk()
         
         self.root.iconbitmap('icon/logo_uprava2.ico')
         self.root.title("Kalibrace snímače malých posunutí")
-        self.root.geometry("1200x800")
+        self.root.geometry("1250x800")
         self.root.config(bg="white")
         
         self.root.grid_rowconfigure(0, weight=1)
@@ -31,9 +34,9 @@ class RootGUI():
         
         #vytvoreni menu
         self.menu = Menu(self.root)
-        self.menu.add_command(label="Připojení", command=None)
+        self.menu.add_command(label="Připojení", command=lambda: self.show_frame("main"))      
+        self.menu.add_command(label="Kalibrace", command=lambda: self.show_frame("kalibrace"))
         self.menu.add_command(label="Konec", command=self.window_exit)
-        self.menu.add_command(label="Kalibrace", command= lambda: self.show_frame("kalibrace"))
         
         self.root.config(menu=self.menu)
         
@@ -56,9 +59,11 @@ class RootGUI():
         self.root.destroy()
         print("Zavirani okna a vypnuti aplikace")
         
-       
+#-------------------------------------------------------------------------        
 #SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY    
-#PRVNI OKNO APLIKACE - PRIPOJENI A OVLADANI SUBSYSTEMU
+#PRVNI OKNO APLIKACE (main) - PRIPOJENI A OVLADANI SUBSYSTEMU PIEZA A MCU
+#------------------------------------------------------------------------- 
+
 class MainPage(Frame):
     def __init__(self, parent, controller : 'MainController', piezo_model, mcu_model):
         super().__init__(parent)
@@ -105,7 +110,6 @@ class ComGUI(LabelFrame):
         self.publish()
         #LEVE OKNA - COM PRIPOJENI
         
-      
     def publish(self):
         #LEVE OKNA - COM PRIPOJENI
         # self.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
@@ -126,7 +130,6 @@ class ComGUI(LabelFrame):
         self.btn_connect_MCU.grid(row=1, column=2, padx=5, pady=5)
         self.drop_com_MCU.grid(row=0, column=1, padx=5, pady=5)
         self.drop_bd_MCU.grid(row=1, column=1, padx=5, pady=5)
-        #LEVE OKNA - COM PRIPOJENI
     
     #LEVE OKNA LOGIKA - COM PRIPOJENI  
     def com_refresh_piezo(self):
@@ -188,19 +191,14 @@ class ComGUI(LabelFrame):
             self.btn_connect_MCU["state"] = "active"
             print("Pripojeni k MCU aktivni")    
  
-    #LEVE OKNA LOGIKA - COM PRIPOJENI
     
-#SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY - LEVE HORNI OKNO APLIKACE, trida ComGui()     
-    
+#SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY - LEVE HORNI OKNO APLIKACE, trida ComGui()         
 class PiezoGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController' ,piezo_model : 'Piezo_model'):
         super().__init__(parent, text="Piezopohony", padx=5, pady=5, bg="white", relief="groove",bd=5)
         self.controller = controller
         self.piezo_model = piezo_model
         self.controller.piezo = True
-        
-
-        self.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
         
         #ovladani
         self.frame_piezo_ovladani = LabelFrame(self,text="Ovládání" ,padx=5, pady=5, bg="white")
@@ -212,12 +210,11 @@ class PiezoGUI(LabelFrame):
         
         self.label_index_piezo = Label(self.frame_piezo_ovladani_leve, text="Home pozice:", bg="white", width=20, anchor="w")
         self.label_index_piezo.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
-        self.BTN_index_piezo = Button(self.frame_piezo_ovladani_leve, text="HOME", width=10, command= self.controller.M_C_Index)#SERIAL - POSLAT INDEX - PRIJEM
+        self.BTN_index_piezo = Button(self.frame_piezo_ovladani_leve, text="HOME", width=10,state="disabled" ,command= self.controller.M_C_Index)#SERIAL - POSLAT INDEX - PRIJEM
         self.BTN_index_piezo.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
         
         
     def publish_PiezoGUI_home_done(self):
-        
         #ovladani
         self.label_piezo_precist_polohu = Label(self.frame_piezo_ovladani_leve, text="Přečíst aktuální polohu:", bg= "white", width=20, anchor="w")
         self.BTN_piezo_precist_polohu = Button(self.frame_piezo_ovladani_leve, text="POLOHA", width=10, command=self.controller.M_C_precti_polohu)
@@ -264,11 +261,10 @@ class PiezoGUI(LabelFrame):
         self.text_piezo_odpoved = Text(self.frame_piezo_prikaz, width=25, height=1)
         self.BTN_piezo_odpoved = Button(self.frame_piezo_prikaz, text="REFRESH", width=10, command=self.controller.M_C_odpoved_piezo_refresh)
         
+        #zavolani
         self.publish()
         
-        
     def publish(self):
-        
         #ovladani
         self.label_reference_piezo.grid(row=1, column=0, padx=5, pady=5, sticky="NW")
         self.BTN_reference_piezo.grid(row=1, column=1, padx=5, pady=5, sticky="NW")
@@ -314,29 +310,119 @@ class PiezoGUI(LabelFrame):
         
     def PiezoGUIClose(self):
         self.controller.piezo = False
-        for widget in self.winfo_children():
-            widget.destroy()
-        self.destroy()
+        self.disable_children(self)
+    
+    def disable_children(self, widget):
+        if isinstance(widget, (Button, Entry)):
+            widget.config(state="disabled")   
+        elif isinstance(widget, OptionMenu):
+            widget.config(state="disabled")
+        for child in widget.winfo_children():
+                self.disable_children(child)
+        
+    def PiezoGUIOpen(self):
+        self.controller.piezo = True
+        self.enable_children(self)
+        
+    def enable_children(self, widget):     
+        if isinstance(widget, (Button, Entry)):
+            widget.config(state="normal")     
+        elif isinstance(widget, OptionMenu):
+            widget.config(state="normal")       
+        for child in widget.winfo_children():
+            self.enable_children(child)     
+        
+    def disable_piezo_buttons(self):
+        self.BTN_piezo_pohyb_xP.config(state="disabled")
+        self.BTN_piezo_pohyb_xM.config(state="disabled")
+        self.BTN_piezo_pohyb_yP.config(state="disabled")
+        self.BTN_piezo_pohyb_yM.config(state="disabled")
+        self.BTN_piezo_pohyb_zP.config(state="disabled")
+        self.BTN_piezo_pohyb_zM.config(state="disabled")
+        self.BTN_piezo_prikaz.config(state="disabled")
+        
+    def enable_piezo_buttons(self):
+        self.BTN_piezo_pohyb_xP.config(state="normal")
+        self.BTN_piezo_pohyb_xM.config(state="normal")
+        self.BTN_piezo_pohyb_yP.config(state="normal")
+        self.BTN_piezo_pohyb_yM.config(state="normal")
+        self.BTN_piezo_pohyb_zP.config(state="normal")
+        self.BTN_piezo_pohyb_zM.config(state="normal")
+        self.BTN_piezo_prikaz.config(state="normal")
         
 class McuGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController' ,mcu_model : 'MCU_model'):
         super().__init__(parent, text="MCU", padx=5, pady=5, bg="white", relief="groove",bd=5)
         self.controller = controller
         self.mcu_model = mcu_model
-        
         self.controller.mcu = True
 
-        # self.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
-
+        #Ovladani
+        self.frame_mcu_prikaz = LabelFrame(self,text="Příkaz" ,padx=5, pady=5, bg="white")
+        self.frame_mcu_prikaz.grid(row=0, column=0, padx=5, pady=5, sticky="NW") 
+        
+        self.label_mcu_odeslat = Label(self.frame_mcu_prikaz, text="Zpráva k odeslání: ", bg="white", width=15, anchor="w")
+        self.entry_mcu_prikaz = Entry(self.frame_mcu_prikaz, width=33)
+        # self.entry_mcu_prikaz.bind("<Return>", lambda _ : self.controller.(self.entry_mcu_prikaz.get()))
+        self.BTN_mcu_prikaz = Button(self.frame_mcu_prikaz, text="Poslat", width=10, command=None)
+        
+        self.label_mcu_odpoved = Label(self.frame_mcu_prikaz, text="Odpověď piezopohony:", bg="white", width=20, anchor="w")
+        self.text_mcu_odpoved = Text(self.frame_mcu_prikaz, width=25, height=1)
+        self.BTN_mcu_odpoved = Button(self.frame_mcu_prikaz, text="REFRESH", width=10, command= None)
+        
+        self.publish_gui_MCU()
+        self.McuGUIClose()
+        
+    def publish_gui_MCU(self):
+        self.label_mcu_odeslat.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
+        self.entry_mcu_prikaz.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
+        self.BTN_mcu_prikaz.grid(row=0, column=2, padx=5, pady=5, sticky="NW")   
+        self.label_mcu_odpoved.grid(row=1, column=0, padx=5, pady=5, sticky="NW") 
+        self.text_mcu_odpoved.grid(row=1, column=1, padx=5, pady=5, sticky="NW")
+        self.text_mcu_odpoved.config(state="disabled")
+        self.BTN_mcu_odpoved.grid(row=1, column=2, padx=5, pady=5, sticky="NW")    
             
     def McuGUIClose(self):
         self.controller.mcu = False
-        for widget in self.winfo_children():
-            widget.destroy()
-        self.destroy()
-        
-
+        self.disable_children(self)
     
+    def disable_children(self, widget):
+        if isinstance(widget, (Button, Entry)):
+            widget.config(state="disabled")   
+        elif isinstance(widget, OptionMenu):
+            widget.config(state="disabled")
+        for child in widget.winfo_children():
+                self.disable_children(child)
+        
+    def McuGUIOpen(self):
+        self.controller.mcu = True
+        self.enable_children(self)
+        
+    def enable_children(self, widget):     
+        if isinstance(widget, (Button, Entry)):
+            widget.config(state="normal")     
+        elif isinstance(widget, OptionMenu):
+            widget.config(state="normal")       
+        for child in widget.winfo_children():
+            self.enable_children(child)
+               
+#------------------------------        
+#KALIBRACE PAGE    
+#------------------------------           
+class KalibracePage(Frame):
+    def __init__(self, parent, controller : 'MainController', piezo_model, mcu_model):
+        super().__init__(parent)
+        self.config(bg="white")
+        
+        self.kalibrace_gui : LabelFrame = KalibraceGUI(self, controller, piezo_model, mcu_model, )
+        
+        self.controler = controller
+        self.controler.set_kalibrace_page(self)
+        
+class KalibraceGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
+        super().__init__(parent, text="Kalibrace", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
+
 if __name__ == "__main__":
     print("TOTO NENI HLAVNI APLIKACE")
     print("HLAVNI APLIKACE JE V SOUBORU main.py")

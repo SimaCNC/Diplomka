@@ -89,7 +89,6 @@ class Piezo_model():
                     self.posledni_odpoved_piezopohony = self.piezo_serial.get_msg_simple()
                     if self.posledni_odpoved_piezopohony:
                         print(f"[odpoved]: prichozi zprava {self.posledni_odpoved_piezopohony}")                      
-                          
                     if callback_fun:
                         callback_fun()    
                     break
@@ -113,6 +112,6 @@ class Piezo_model():
 
     def read_serial_data(self):
         try:
-            data = self.ser.readline().decode().strip()
+            data = self.piezo_serial.ser.readline().decode().strip()
         except AttributeError:
             print("seriovy port neni inicializovany")
