@@ -60,8 +60,8 @@ class RootGUI():
         print("Zavirani okna a vypnuti aplikace")
         
 #-------------------------------------------------------------------------        
-#SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY    
 #PRVNI OKNO APLIKACE (main) - PRIPOJENI A OVLADANI SUBSYSTEMU PIEZA A MCU
+#SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY    
 #------------------------------------------------------------------------- 
 
 class MainPage(Frame):
@@ -198,7 +198,7 @@ class PiezoGUI(LabelFrame):
         super().__init__(parent, text="Piezopohony", padx=5, pady=5, bg="white", relief="groove",bd=5)
         self.controller = controller
         self.piezo_model = piezo_model
-        self.controller.piezo = True
+        
         
         #ovladani
         self.frame_piezo_ovladani = LabelFrame(self,text="Ovládání" ,padx=5, pady=5, bg="white")
@@ -355,7 +355,6 @@ class McuGUI(LabelFrame):
         super().__init__(parent, text="MCU", padx=5, pady=5, bg="white", relief="groove",bd=5)
         self.controller = controller
         self.mcu_model = mcu_model
-        self.controller.mcu = True
 
         #Ovladani
         self.frame_mcu_prikaz = LabelFrame(self,text="Příkaz" ,padx=5, pady=5, bg="white")
@@ -414,14 +413,28 @@ class KalibracePage(Frame):
         super().__init__(parent)
         self.config(bg="white")
         
-        self.kalibrace_gui : LabelFrame = KalibraceGUI(self, controller, piezo_model, mcu_model, )
+        self.stav_gui : LabelFrame = StavGUI(self, controller, piezo_model, mcu_model)
+        self.stav_gui.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+                
+        # self.kalibrace_gui : LabelFrame = KalibraceGUI(self, controller, piezo_model, mcu_model, )
         
         self.controler = controller
         self.controler.set_kalibrace_page(self)
-        
-class KalibraceGUI(LabelFrame):
+
+class StavGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
-        super().__init__(parent, text="Kalibrace", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
+        super().__init__(parent, text="Stav", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
+        self.label_stav_piezo = Label(self, text="Připojení piezo :", bg="white", width=15, anchor="w")
+        self.label_stav_MCU = Label(self, text="Připojení MCU :", bg="white", width=15, anchor="w")
+        
+        self.publish()
+        
+    def publish(self):
+        self.label_stav_piezo.grid(row=0, column=0, padx=5, pady=5)
+
+# class KalibraceGUI(LabelFrame):
+#     def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
+#         super().__init__(parent, text="Kalibrace", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
 
 if __name__ == "__main__":
     print("TOTO NENI HLAVNI APLIKACE")

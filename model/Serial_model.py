@@ -46,7 +46,6 @@ class SerialCtrl():
             
             
     # METODY PRO POSILANI a PRIJEM DAT - PIEZO
-     
     def send_msg_simple(self, msg : str):
         print(msg)
         self.ser.write(msg.encode())

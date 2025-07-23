@@ -52,6 +52,7 @@ class MainController():
                 self.com.drop_bd_piezo["state"] = "disable"
                 self.com.drop_com_piezo["state"] = "disable"
                 self.piezo_gui.PiezoGUIOpen()
+                self.mcu = True
                 InfoMsg = f"Piezo\nÚspěšně připojeno pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
                 messagebox.showinfo("Piezo info", InfoMsg)
             else:
@@ -60,6 +61,7 @@ class MainController():
         else:
             self.piezo_model.piezo_serial.SerialClose()
             self.piezo_gui.PiezoGUIClose()
+            self.mcu = False
             InfoMsg = f"Piezo\nÚspěšně odpojeno pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
             messagebox.showinfo("Piezo info", InfoMsg)  
             self.com.btn_connect_piezo["text"] = "Připojit"
