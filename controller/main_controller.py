@@ -5,6 +5,7 @@ import time
 import re
 from view.main_view import MainPage, KalibracePage
 from typing import TYPE_CHECKING
+from controller.kalibrace_controller import KalibraceController
 
 if TYPE_CHECKING:
     from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI
@@ -21,6 +22,8 @@ class MainController():
         self.piezo = False
         self.mcu = False
         self.main_page = None
+        
+        self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
         
 #PRIRAZOVANI POHLEDU
     def set_main_page(self, main_page : 'MainPage'):
@@ -245,8 +248,11 @@ class MainController():
             self.stav_gui.label_stav_MCU_show.config(text="AKTIVNÍ", fg="green")
             self.mcu_model.precti_teplotu()
             time.sleep(0.05)
-            self.stav_gui.label_teplota_show.config(text=self.mcu_model.teplota_okoli)
+            self.stav_gui.label_teplota_show.config(text=self.mcu_model.teplota_okoli + "°C")
         else:
             self.stav_gui.label_stav_MCU_show.config(text="MCU NEAKTIVNÍ", fg="red")
         
         print(f"[M_C_aktualizace_stav]: aktualizace stavu")
+        
+    
+        

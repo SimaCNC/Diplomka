@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
     from controller.main_controller import MainController
+    from controller.kalibrace_controller import KalibraceController
     
 #-----------------------------------------------------     
 #KORENOVE OKNO - VYTVORENI INSTANCE TK V ATRIBUTU ROOT    
@@ -467,12 +468,12 @@ class Typ_protokolGUI(LabelFrame):
         self.mcu_model = mcu_model
         
         self.vybrane_var = StringVar(self, value="1")
-        #   volby = {"A/D převodník" : "1",
-                    #"Pulzy" : "2",
-                    #"Protokol" : "3"}
-        self.RB_AD = Radiobutton(self, text="A/D převodník: 0...3,3V", variable=self.vybrane_var, value="1",bg="white" ,command=None, width=20, anchor="w")
-        self.RB_pulzy = Radiobutton(self, text="Pulzy: 0...250kHz", variable=self.vybrane_var, value="2",bg="white" ,command=None, width=20, anchor="w")
-        self.RB_protokol = Radiobutton(self, text="Protokol (viz. nápověda)", variable=self.vybrane_var, value="3",bg="white" ,command=None, width=20, anchor="w")   
+        #   volby = {"1" : "A/D převodník",
+                    #"2" : "Pulzy",
+                    #"3" : "Protokol"}
+        self.RB_AD = Radiobutton(self, text="A/D převodník: 0...3,3V", variable=self.vybrane_var, value="1",bg="white" ,command=lambda : self.controller.kalibrace.protokol_kalibrace(self.vybrane_var.get()), width=20, anchor="w")
+        self.RB_pulzy = Radiobutton(self, text="Pulzy: 0...250kHz", variable=self.vybrane_var, value="2",bg="white" ,command=lambda : self.controller.kalibrace.protokol_kalibrace(self.vybrane_var.get()), width=20, anchor="w")
+        self.RB_protokol = Radiobutton(self, text="Protokol (viz. nápověda)", variable=self.vybrane_var, value="3",bg="white" ,command=lambda : self.controller.kalibrace.protokol_kalibrace(self.vybrane_var.get()), width=20, anchor="w")   
             
         self.publish()
         
@@ -490,12 +491,16 @@ class KalibraceGUI(LabelFrame):
         self.mcu_model = mcu_model
         
         self.label_slozka = Label(self, text="Pracovní složka :", bg="white", width=20, anchor="w")
-        self.label_metoda = Label(self, text="Metoda zpracování :", bg="white", width=20, anchor="w")
+        self.label_slozka_pracovni = Label(self, text="N/A", bg="white", width=30, anchor="w")
+        self.BTN_slozka_pracovni = Button(self, text="SLOŽKA", width=10, state="active", command=self.controller.kalibrace.vybrat_pracovni_slozku)
+        self.label_strategie = Label(self, text="Strategie zpracování :", bg="white", width=20, anchor="w")
+        self.label_strategie_vybrana = Label(self, text="N/A", bg ="white", width=30, anchor="w")
         self.label_krok = Label(self, text="Délka kroku :", bg="white", width=20, anchor="w")
         
         self.label_regulace = Label(self, text="Regulace teploty :", bg="white", width=20, anchor="w")
-        self.regulace_var = StringVar(self, value="1")
-        self.RB_regulace_teplota = Radiobutton(self, text="Regulace teplota", variable=self.regulace_var, value="0", bg="white", command=None, width=20, anchor="w")
+        self.regulace_var = StringVar(self, value="0")
+        self.RB_regulace_teplota0 = Radiobutton(self, text="Bez regulace", variable=self.regulace_var, value="0", bg="white", command=None, width=20, anchor="w")
+        self.RB_regulace_teplota1 = Radiobutton(self, text="Regulace teploty", variable=self.regulace_var, value="1", bg="white", command=None, width=20, anchor="w")
         self.label_odhad_cas = Label(self, text="Odhadovaný čas kalibrace :", bg="white", width=20, anchor="w")
         self.label_kalibraceStart = Label(self, text="Start kalibrace :", bg="white", width=20, anchor="w")
         
@@ -503,11 +508,15 @@ class KalibraceGUI(LabelFrame):
         
     def publish(self):
         self.label_slozka.grid(row=0, column=0, padx=5, pady=5)
-        self.label_metoda.grid(row=1, column=0, padx=5, pady=5)
+        self.label_slozka_pracovni.grid(row=0, column=1, padx=5, pady=5)
+        self.BTN_slozka_pracovni.grid(row=0, column=2, padx=5, pady=5)
+        self.label_strategie.grid(row=1, column=0, padx=5, pady=5)
+        self.label_strategie_vybrana.grid(row=1, column=1, padx=5, pady=5)
         self.label_krok.grid(row=2, column=0, padx=5, pady=5)
         
         self.label_regulace.grid(row=3, column=0, padx=5, pady=5)
-        self.RB_regulace_teplota.grid(row=3, column=1, padx=5, pady=5)
+        self.RB_regulace_teplota0.grid(row=3, column=1, padx=5, pady=5)
+        self.RB_regulace_teplota1.grid(row=3, column=2, padx=5, pady=5)
         self.label_odhad_cas.grid(row=4, column=0, padx=5, pady=5)
         self.label_kalibraceStart.grid(row=5, column=0, padx=5, pady=5)
 
