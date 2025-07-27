@@ -7,7 +7,7 @@ from view.main_view import MainPage, KalibracePage
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI
+    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
     import tkinter as Tk
@@ -31,6 +31,9 @@ class MainController():
     
     def set_kalibrace_page(self, kalibrace_page : 'KalibracePage'):
         self.kalibrace_page = kalibrace_page
+        self.stav_gui : StavGUI = kalibrace_page.stav_gui
+        self.protokol_gui : Typ_protokolGUI = kalibrace_page.protokol_gui
+        self.kalibrace_gui : KalibraceGUI = kalibrace_page.kalibrace_gui
     
 #Vytvoreni pohledu a definovani prvniho okna - Pripojeni = main      
     def setup_gui(self):
@@ -39,6 +42,7 @@ class MainController():
         #self.view.add_frame("nápověda")
         self.view.show_frame("main")
         
+#MAIN PAGE
 #M_C GUI PRO MAIN POHLED
     def M_serial_connect_piezo(self):
         if self.com.btn_connect_piezo["text"] in "Připojit" :
@@ -52,7 +56,6 @@ class MainController():
                 self.com.drop_bd_piezo["state"] = "disable"
                 self.com.drop_com_piezo["state"] = "disable"
                 self.piezo_gui.PiezoGUIOpen()
-                self.mcu = True
                 InfoMsg = f"Piezo\nÚspěšně připojeno pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
                 messagebox.showinfo("Piezo info", InfoMsg)
             else:
@@ -61,7 +64,6 @@ class MainController():
         else:
             self.piezo_model.piezo_serial.SerialClose()
             self.piezo_gui.PiezoGUIClose()
-            self.mcu = False
             InfoMsg = f"Piezo\nÚspěšně odpojeno pomocí sériové komunikace k {self.com.vybrany_com_piezo.get()}"
             messagebox.showinfo("Piezo info", InfoMsg)  
             self.com.btn_connect_piezo["text"] = "Připojit"
@@ -208,4 +210,43 @@ class MainController():
         self.piezo_gui.enable_children(self.piezo_gui)
         # self.piezo_gui.enable_piezo_buttons()
 
-#CONTROLLER PIEZO OVLADANI
+
+    def M_C_send_msg_MCU(self, msg):
+        self.mcu_model.mcu_serial.send_msg_simple(msg = msg+"\n")
+        
+        def callback_po_odpovedi_MCU():
+            self.M_C_update_MCU_odpoved_do_GUI()
+
+        self.mcu_model.msg_odpoved(callback_fun=callback_po_odpovedi_MCU)
+    
+    def M_C_update_MCU_odpoved_do_GUI(self):
+        odpoved = self.mcu_model.posledni_odpoved_MCU
+        
+        if odpoved:
+            self.mcu_gui.text_MCU_odpoved.config(state="normal")
+            self.mcu_gui.text_MCU_odpoved.delete("1.0", "end")
+            self.mcu_gui.text_MCU_odpoved.insert("1.0", odpoved)
+            self.mcu_gui.text_MCU_odpoved.config(state="disabled")
+            
+    def M_C_odpoved_MCU_refresh(self):
+        self.mcu_gui.text_MCU_odpoved.config(state="normal")
+        self.mcu_gui.text_MCU_odpoved.delete("1.0", "end")
+        self.mcu_gui.text_MCU_odpoved.insert("1.0", "")
+        self.mcu_gui.text_MCU_odpoved.config(state="disabled")
+
+#KALIBRACE PAGE
+    def M_C_aktualizace_stav(self):
+        if self.piezo == True:
+            self.stav_gui.label_stav_piezo_show.config(text="AKTIVNÍ", fg="green")
+        else:
+            self.stav_gui.label_stav_piezo_show.config(text="PIEZO NEAKTIVNÍ", fg="red")
+
+        if self.mcu == True:
+            self.stav_gui.label_stav_MCU_show.config(text="AKTIVNÍ", fg="green")
+            self.mcu_model.precti_teplotu()
+            time.sleep(0.05)
+            self.stav_gui.label_teplota_show.config(text=self.mcu_model.teplota_okoli)
+        else:
+            self.stav_gui.label_stav_MCU_show.config(text="MCU NEAKTIVNÍ", fg="red")
+        
+        print(f"[M_C_aktualizace_stav]: aktualizace stavu")

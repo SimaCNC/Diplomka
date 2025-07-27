@@ -36,6 +36,8 @@ class RootGUI():
         self.menu = Menu(self.root)
         self.menu.add_command(label="Připojení", command=lambda: self.show_frame("main"))      
         self.menu.add_command(label="Kalibrace", command=lambda: self.show_frame("kalibrace"))
+        self.menu.add_command(label="Offline", command=lambda : self.show_frame("offline"))
+        self.menu.add_command(label="Nápověda", command=lambda : self.show_frame("napoveda"))
         self.menu.add_command(label="Konec", command=self.window_exit)
         
         self.root.config(menu=self.menu)
@@ -362,12 +364,12 @@ class McuGUI(LabelFrame):
         
         self.label_mcu_odeslat = Label(self.frame_mcu_prikaz, text="Zpráva k odeslání: ", bg="white", width=15, anchor="w")
         self.entry_mcu_prikaz = Entry(self.frame_mcu_prikaz, width=33)
-        # self.entry_mcu_prikaz.bind("<Return>", lambda _ : self.controller.(self.entry_mcu_prikaz.get()))
-        self.BTN_mcu_prikaz = Button(self.frame_mcu_prikaz, text="Poslat", width=10, command=None)
+        self.entry_mcu_prikaz.bind("<Return>", lambda _ : self.controller.M_C_send_msg_MCU(self.entry_mcu_prikaz.get()))
+        self.BTN_mcu_prikaz = Button(self.frame_mcu_prikaz, text="POSLAT", width=10, command= lambda: self.controller.M_C_send_msg_MCU(self.entry_mcu_prikaz.get()))
         
-        self.label_mcu_odpoved = Label(self.frame_mcu_prikaz, text="Odpověď piezopohony:", bg="white", width=20, anchor="w")
-        self.text_mcu_odpoved = Text(self.frame_mcu_prikaz, width=25, height=1)
-        self.BTN_mcu_odpoved = Button(self.frame_mcu_prikaz, text="REFRESH", width=10, command= None)
+        self.label_mcu_odpoved = Label(self.frame_mcu_prikaz, text="Odpověď MCU:", bg="white", width=20, anchor="w")
+        self.text_MCU_odpoved = Text(self.frame_mcu_prikaz, width=25, height=1)
+        self.BTN_mcu_odpoved = Button(self.frame_mcu_prikaz, text="REFRESH", width=10, command= self.controller.M_C_odpoved_MCU_refresh)
         
         self.publish_gui_MCU()
         self.McuGUIClose()
@@ -377,8 +379,8 @@ class McuGUI(LabelFrame):
         self.entry_mcu_prikaz.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
         self.BTN_mcu_prikaz.grid(row=0, column=2, padx=5, pady=5, sticky="NW")   
         self.label_mcu_odpoved.grid(row=1, column=0, padx=5, pady=5, sticky="NW") 
-        self.text_mcu_odpoved.grid(row=1, column=1, padx=5, pady=5, sticky="NW")
-        self.text_mcu_odpoved.config(state="disabled")
+        self.text_MCU_odpoved.grid(row=1, column=1, padx=5, pady=5, sticky="NW")
+        self.text_MCU_odpoved.config(state="disabled")
         self.BTN_mcu_odpoved.grid(row=1, column=2, padx=5, pady=5, sticky="NW")    
             
     def McuGUIClose(self):
@@ -416,25 +418,98 @@ class KalibracePage(Frame):
         self.stav_gui : LabelFrame = StavGUI(self, controller, piezo_model, mcu_model)
         self.stav_gui.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
                 
-        # self.kalibrace_gui : LabelFrame = KalibraceGUI(self, controller, piezo_model, mcu_model, )
+        self.protokol_gui : LabelFrame = Typ_protokolGUI(self, controller, piezo_model, mcu_model)
+        self.protokol_gui.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
+        
+        self.kalibrace_gui : LabelFrame = KalibraceGUI(self, controller, piezo_model, mcu_model, )
+        self.kalibrace_gui.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
         
         self.controler = controller
         self.controler.set_kalibrace_page(self)
 
+#Frame STAV
 class StavGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
         super().__init__(parent, text="Stav", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
-        self.label_stav_piezo = Label(self, text="Připojení piezo :", bg="white", width=15, anchor="w")
-        self.label_stav_MCU = Label(self, text="Připojení MCU :", bg="white", width=15, anchor="w")
+        self.controller = controller
+        self.piezo_model = piezo_model
+        self.mcu_model = mcu_model
         
+        self.label_stav_piezo = Label(self, text="Připojení piezo :", bg="white", width=20, anchor="w")
+        self.label_stav_piezo_show = Label(self, text="NEAKTIVNÍ", fg="red", bg="white", width=20, anchor="w")
+        self.label_stav_MCU = Label(self, text="Připojení MCU :", bg="white", width=20, anchor="w")
+        self.label_stav_MCU_show = Label(self, text="NEAKTIVNÍ", fg="red", bg="white", width=20, anchor="w")
+        self.label_teplota = Label(self, text="Teplota okolí senzoru :", bg="white", width=20, anchor="w")
+        self.label_teplota_show = Label(self, text="N/A", fg="red", bg="white", width=20, anchor="w")
+        
+        
+        self.label_aktualizace = Label(self, text="Aktualizace :", bg="white", width=20, anchor="w")
+        self.BTN_aktualizace = Button(self, text="Aktualizace", width=20, state="active", command=controller.M_C_aktualizace_stav)
         self.publish()
         
     def publish(self):
         self.label_stav_piezo.grid(row=0, column=0, padx=5, pady=5)
+        self.label_stav_piezo_show.grid(row=0, column=1, padx=5, pady=5)
+        self.label_stav_MCU.grid(row=1, column=0, padx=5, pady=5)
+        self.label_stav_MCU_show.grid(row=1, column=1, padx=5, pady=5)
+        self.label_teplota.grid(row=2, column=0, padx=5, pady=5)
+        self.label_teplota_show.grid(row=2, column=1, padx=5, pady=5)
+        
+        self.label_aktualizace.grid(row=3, column=0, padx=5, pady=5)
+        self.BTN_aktualizace.grid(row=3, column=1, padx=5, pady=5)
 
-# class KalibraceGUI(LabelFrame):
-#     def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
-#         super().__init__(parent, text="Kalibrace", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
+#Frame ZPRACOVANI DAT
+class Typ_protokolGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
+        super().__init__(parent, text="Zpracování dat", padx=5, pady=5, bg="white", fg="black", bd=5, relief="groove")
+        self.controller = controller
+        self.piezo_model = piezo_model
+        self.mcu_model = mcu_model
+        
+        self.vybrane_var = StringVar(self, value="1")
+        #   volby = {"A/D převodník" : "1",
+                    #"Pulzy" : "2",
+                    #"Protokol" : "3"}
+        self.RB_AD = Radiobutton(self, text="A/D převodník: 0...3,3V", variable=self.vybrane_var, value="1",bg="white" ,command=None, width=20, anchor="w")
+        self.RB_pulzy = Radiobutton(self, text="Pulzy: 0...250kHz", variable=self.vybrane_var, value="2",bg="white" ,command=None, width=20, anchor="w")
+        self.RB_protokol = Radiobutton(self, text="Protokol (viz. nápověda)", variable=self.vybrane_var, value="3",bg="white" ,command=None, width=20, anchor="w")   
+            
+        self.publish()
+        
+    def publish(self):
+        self.RB_AD.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        self.RB_pulzy.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
+        self.RB_protokol.grid(row=2, column=0, padx=5, pady=5, sticky="nw")
+
+#Frame KALIBRACE
+class KalibraceGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
+        super().__init__(parent, text="Kalibrace", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
+        self.controller = controller
+        self.piezo_model = piezo_model
+        self.mcu_model = mcu_model
+        
+        self.label_slozka = Label(self, text="Pracovní složka :", bg="white", width=20, anchor="w")
+        self.label_metoda = Label(self, text="Metoda zpracování :", bg="white", width=20, anchor="w")
+        self.label_krok = Label(self, text="Délka kroku :", bg="white", width=20, anchor="w")
+        
+        self.label_regulace = Label(self, text="Regulace teploty :", bg="white", width=20, anchor="w")
+        self.regulace_var = StringVar(self, value="1")
+        self.RB_regulace_teplota = Radiobutton(self, text="Regulace teplota", variable=self.regulace_var, value="0", bg="white", command=None, width=20, anchor="w")
+        self.label_odhad_cas = Label(self, text="Odhadovaný čas kalibrace :", bg="white", width=20, anchor="w")
+        self.label_kalibraceStart = Label(self, text="Start kalibrace :", bg="white", width=20, anchor="w")
+        
+        self.publish()
+        
+    def publish(self):
+        self.label_slozka.grid(row=0, column=0, padx=5, pady=5)
+        self.label_metoda.grid(row=1, column=0, padx=5, pady=5)
+        self.label_krok.grid(row=2, column=0, padx=5, pady=5)
+        
+        self.label_regulace.grid(row=3, column=0, padx=5, pady=5)
+        self.RB_regulace_teplota.grid(row=3, column=1, padx=5, pady=5)
+        self.label_odhad_cas.grid(row=4, column=0, padx=5, pady=5)
+        self.label_kalibraceStart.grid(row=5, column=0, padx=5, pady=5)
 
 if __name__ == "__main__":
     print("TOTO NENI HLAVNI APLIKACE")

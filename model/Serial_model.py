@@ -47,21 +47,21 @@ class SerialCtrl():
             
     # METODY PRO POSILANI a PRIJEM DAT - PIEZO
     def send_msg_simple(self, msg : str):
-        print(msg)
+        print(f"[SerialCtrl]: odeslana zprava: {msg}")
         self.ser.write(msg.encode())
         
     def get_msg_simple(self, callback = None): #CALLBACK JE FUNKCE, KTERA JE VLOZENA JAKO ARGUMENT - FLEXIBILNI POUZITI FUNKCE get_msg_simple!!
         try:
             data = self.ser.readline().decode().strip()
             if data:
-                print(f"[serial]:přijaté data: {data}")
+                print(f"[SerialCtrl]:přijaté data: {data}")
                 if callback:
                     callback(data)
             else:
-                print("[serial]: nebyla prijata zadne data - timeout")
+                print("[SerialCtrl]: nebyla prijata zadne data - timeout")
             return data
         except Exception as e:
-            print(f"[serial]: chyba pri cteni dat: {e}")
+            print(f"[SerialCtrl]: chyba pri cteni dat: {e}")
             
     def get_msg_stream(self,send, expect_regex, callback_fun = None):
         try:

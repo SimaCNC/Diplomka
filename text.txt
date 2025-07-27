@@ -7,3 +7,10 @@ C - command pro piezopohony (funkce ma vysokou spojitost s piezopohony)
 
 
 cisla u popisku v controlleru odpovidaji cca strane kde se spojitost vyskytuje
+
+
+
+
+
+#upravy
+-je potreba projit veskere promenne s hodnotou None.. pravdepodobne nedodelana/zapomenuta cast 
