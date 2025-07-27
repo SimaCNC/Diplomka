@@ -1,6 +1,7 @@
 from tkinter import *
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
@@ -10,7 +11,6 @@ if TYPE_CHECKING:
 #-----------------------------------------------------     
 #KORENOVE OKNO - VYTVORENI INSTANCE TK V ATRIBUTU ROOT    
 #----------------------------------------------------- 
-
 class RootGUI():
     def __init__(self):
         self.root : Tk = Tk()
@@ -61,24 +61,62 @@ class RootGUI():
         #     self.root.destroy()
         self.root.destroy()
         print("Zavirani okna a vypnuti aplikace")
+
+#-----------------------------------------------------     
+#TRIDA PRO VYTVORENI SCROLLOVACICH OKEN - FRAME
+#----------------------------------------------------- 
+
+class ScrollableFrame(Frame):
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
         
+        self.canvas = Canvas(self, bg="white")
+        self.scrollable_frame = Frame(self.canvas, bg="white")
+        
+        # Scrollbary
+        self.v_scrollbar = Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.h_scrollbar = Scrollbar(self, orient="horizontal", command=self.canvas.xview)
+
+        self.canvas.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
+
+        self.v_scrollbar.pack(side="right", fill="y")
+        self.h_scrollbar.pack(side="bottom", fill="x")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+    
+        self.scrollable_frame.bind("<Configure>", self._on_frame_configure)
+        # self.canvas.bind("<Configure>", self._on_canvas_configure)  
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-4>", lambda e: self.canvas.yview_scroll(-1, "units"))  # Linux
+        self.canvas.bind_all("<Button-5>", lambda e: self.canvas.yview_scroll(1, "units"))   # Linux 
+
+    def _on_frame_configure(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _on_canvas_configure(self, event):
+        self.canvas.itemconfig(self.canvas_window, width=event.width)
+
+    def _on_mousewheel(self, event):
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
 #-------------------------------------------------------------------------        
 #PRVNI OKNO APLIKACE (main) - PRIPOJENI A OVLADANI SUBSYSTEMU PIEZA A MCU
 #SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY    
 #------------------------------------------------------------------------- 
 
-class MainPage(Frame):
+class MainPage(ScrollableFrame):
     def __init__(self, parent, controller : 'MainController', piezo_model, mcu_model):
         super().__init__(parent)
         self.config(bg="white")
 
-        self.com_gui : LabelFrame = ComGUI(self, controller, piezo_model, mcu_model)
+        self.com_gui : LabelFrame = ComGUI(self.scrollable_frame, controller, piezo_model, mcu_model)
         self.com_gui.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
         
-        self.piezo_gui : LabelFrame = PiezoGUI(self, controller, piezo_model)
+        self.piezo_gui : LabelFrame = PiezoGUI(self.scrollable_frame, controller, piezo_model)
         self.piezo_gui.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
         
-        self.mcu_gui : LabelFrame = McuGUI(self, controller, mcu_model)
+        self.mcu_gui : LabelFrame = McuGUI(self.scrollable_frame, controller, mcu_model)
         self.mcu_gui.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
         
         self.controler = controller
@@ -411,18 +449,18 @@ class McuGUI(LabelFrame):
 #------------------------------        
 #KALIBRACE PAGE    
 #------------------------------           
-class KalibracePage(Frame):
+class KalibracePage(ScrollableFrame):
     def __init__(self, parent, controller : 'MainController', piezo_model, mcu_model):
         super().__init__(parent)
         self.config(bg="white")
         
-        self.stav_gui : LabelFrame = StavGUI(self, controller, piezo_model, mcu_model)
+        self.stav_gui : LabelFrame = StavGUI(self.scrollable_frame, controller, piezo_model, mcu_model)
         self.stav_gui.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
                 
-        self.protokol_gui : LabelFrame = Typ_protokolGUI(self, controller, piezo_model, mcu_model)
+        self.protokol_gui : LabelFrame = Typ_protokolGUI(self.scrollable_frame, controller, piezo_model, mcu_model)
         self.protokol_gui.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
         
-        self.kalibrace_gui : LabelFrame = KalibraceGUI(self, controller, piezo_model, mcu_model, )
+        self.kalibrace_gui : LabelFrame = KalibraceGUI(self.scrollable_frame, controller, piezo_model, mcu_model, )
         self.kalibrace_gui.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
         
         self.controler = controller
@@ -492,33 +530,51 @@ class KalibraceGUI(LabelFrame):
         
         self.label_slozka = Label(self, text="Pracovní složka :", bg="white", width=20, anchor="w")
         self.label_slozka_pracovni = Label(self, text="N/A", bg="white", width=30, anchor="w")
-        self.BTN_slozka_pracovni = Button(self, text="SLOŽKA", width=10, state="active", command=self.controller.kalibrace.vybrat_pracovni_slozku)
+        self.BTN_slozka_pracovni = Button(self, text="SLOŽKA", width=18, state="active", command=self.controller.kalibrace.vybrat_pracovni_slozku)
+        
         self.label_strategie = Label(self, text="Strategie zpracování :", bg="white", width=20, anchor="w")
         self.label_strategie_vybrana = Label(self, text="N/A", bg ="white", width=30, anchor="w")
-        self.label_krok = Label(self, text="Délka kroku :", bg="white", width=20, anchor="w")
+        self.strategie = ["-", "Dopředná", "Zpětná", "Hystereze", "Hystereze_2" ]
+        self.vybrany_drop_strategie = StringVar()
+        self.drop_strategie = OptionMenu(self, self.vybrany_drop_strategie, *self.strategie,command=None)
+        self.drop_strategie.config(width=15)
+        
+        self.label_krok = Label(self, text="Délka kroku (μm):", bg="white", width=20, anchor="w")
+        self.entry_krok = Entry(self, width=25)
+        # self.entry_krok.bind("<Return>", lambda _ : self.controller.M_C_nastav_pohyb_piezo(self.entry_piezo_pohyb.get()))
+        self.BTN_krok = Button(self, text="Potvrdit", width=18, command=None)
         
         self.label_regulace = Label(self, text="Regulace teploty :", bg="white", width=20, anchor="w")
         self.regulace_var = StringVar(self, value="0")
         self.RB_regulace_teplota0 = Radiobutton(self, text="Bez regulace", variable=self.regulace_var, value="0", bg="white", command=None, width=20, anchor="w")
         self.RB_regulace_teplota1 = Radiobutton(self, text="Regulace teploty", variable=self.regulace_var, value="1", bg="white", command=None, width=20, anchor="w")
-        self.label_odhad_cas = Label(self, text="Odhadovaný čas kalibrace :", bg="white", width=20, anchor="w")
+        
+        # self.label_odhad_cas = Label(self, text="Odhadovaný čas kalibrace :", bg="white", width=20, anchor="w")
         self.label_kalibraceStart = Label(self, text="Start kalibrace :", bg="white", width=20, anchor="w")
+        self.BTN_kalibraceStart = Button(self, text="START", width=18, state="active", command=None)
         
         self.publish()
         
     def publish(self):
         self.label_slozka.grid(row=0, column=0, padx=5, pady=5)
         self.label_slozka_pracovni.grid(row=0, column=1, padx=5, pady=5)
-        self.BTN_slozka_pracovni.grid(row=0, column=2, padx=5, pady=5)
+        self.BTN_slozka_pracovni.grid(row=0, column=2, padx=5, pady=5, sticky="w")
+        
         self.label_strategie.grid(row=1, column=0, padx=5, pady=5)
         self.label_strategie_vybrana.grid(row=1, column=1, padx=5, pady=5)
+        self.drop_strategie.grid(row=1, column=2, padx=5, pady=5, sticky="w")
+        
         self.label_krok.grid(row=2, column=0, padx=5, pady=5)
+        self.entry_krok.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        self.BTN_krok.grid(row=2, column=2, padx=5, pady=5, sticky="w")
         
         self.label_regulace.grid(row=3, column=0, padx=5, pady=5)
-        self.RB_regulace_teplota0.grid(row=3, column=1, padx=5, pady=5)
-        self.RB_regulace_teplota1.grid(row=3, column=2, padx=5, pady=5)
-        self.label_odhad_cas.grid(row=4, column=0, padx=5, pady=5)
-        self.label_kalibraceStart.grid(row=5, column=0, padx=5, pady=5)
+        self.RB_regulace_teplota0.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        self.RB_regulace_teplota1.grid(row=3, column=2, padx=5, pady=5, sticky="w")
+        # self.label_odhad_cas.grid(row=4, column=0, padx=5, pady=5)
+        
+        self.label_kalibraceStart.grid(row=5, column=1, padx=5, pady=5, sticky="e")
+        self.BTN_kalibraceStart.grid(row=5, column=2, padx=5, pady=5, sticky="w")
 
 if __name__ == "__main__":
     print("TOTO NENI HLAVNI APLIKACE")
