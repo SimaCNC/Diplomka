@@ -20,8 +20,10 @@ class MainController():
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
         self.piezo = False
+        self.piezo_is_homed_kalibrace = False
         self.mcu = False
         self.main_page = None
+
         
         self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
         
@@ -105,6 +107,8 @@ class MainController():
     #OVLADANI
     def M_C_Index(self):
         print("VOLANI HOME")
+        self.piezo_model.is_homed = False
+        self.piezo_is_homed_kalibrace = False
         self.piezo_model.index_pozice()
         send = "RI x y z\n"
         expect = r"^\$RI x1 y1 z1$" 
@@ -123,14 +127,13 @@ class MainController():
         print(f"zprava z piezo: {msg}")
         if msg == "$RI x1 y1 z1":
             self.root.after(0, self.piezo_gui.publish_PiezoGUI_home_done)
-            self.piezo_model.is_homed = True
-            self.M_C_precti_polohu()
+            # self.piezo_model.is_homed = True
+            # self.M_C_precti_polohu()
             time.sleep(0.2)
             self.piezo_model.piezo_serial.send_msg_simple(msg="SR x0.002 y0.002 z0.002;\n")
             time.sleep(0.2)
             self.piezo_model.piezo_serial.send_msg_simple(msg="GT x0 y0 z0;\n")
             time.sleep(0.2)
-            # self.M_C_precti_polohu()
             self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu)
         else:
             print("[INDEX]: Neuspesne")
@@ -138,14 +141,17 @@ class MainController():
     
     #POZICE
     def M_C_precti_polohu(self, msg = None):
-        print("[VOLANI AKTUALNI POLOHY]")
+        print(f"[{self.__class__.__name__}] [VOLANI AKTUALNI POLOHY] piezo_model.is_homed = True !")
+        self.piezo_model.is_homed = True
         if self.piezo_model.is_homed == True:
             self.piezo_model.precti_polohu_stojici(self.M_C_precti_polohu_done)
         else:
+            print(f"[{self.__class__.__name__}] najizdeni do home polohy 0,0,0")
             ErrorMsg = f"Piezo\nNejprve je nutné zavolat home!!"
             messagebox.showerror("Piezo CHYBA", ErrorMsg)
         
     def M_C_precti_polohu_done(self):
+        self.piezo_is_homed_kalibrace = True
         self.piezo_gui.label_pozice_homeX_piezo.config(text=f"Xh: {self.piezo_model.x:.3f}")
         self.piezo_gui.label_pozice_homeY_piezo.config(text=f"Yh: {self.piezo_model.y:.3f}")
         self.piezo_gui.label_pozice_homeZ_piezo.config(text=f"Zh: {self.piezo_model.z:.3f}")
@@ -247,8 +253,8 @@ class MainController():
         if self.mcu == True:
             self.stav_gui.label_stav_MCU_show.config(text="AKTIVNÍ", fg="green")
             self.mcu_model.precti_teplotu()
-            time.sleep(0.05)
-            self.stav_gui.label_teplota_show.config(text=self.mcu_model.teplota_okoli + "°C")
+            time.sleep(0.1)
+            self.stav_gui.label_teplota_show.config(text=self.mcu_model.teplota_okoli + "°C", fg="green")
         else:
             self.stav_gui.label_stav_MCU_show.config(text="MCU NEAKTIVNÍ", fg="red")
         

@@ -1,6 +1,6 @@
 from tkinter import *
 from typing import TYPE_CHECKING
-
+from tkinter import messagebox
 
 if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
@@ -37,7 +37,7 @@ class RootGUI():
         self.menu = Menu(self.root)
         self.menu.add_command(label="Připojení", command=lambda: self.show_frame("main"))      
         self.menu.add_command(label="Kalibrace", command=lambda: self.show_frame("kalibrace"))
-        self.menu.add_command(label="Offline", command=lambda : self.show_frame("offline"))
+        self.menu.add_command(label="Data", command=lambda : self.show_frame("data"))
         self.menu.add_command(label="Nápověda", command=lambda : self.show_frame("napoveda"))
         self.menu.add_command(label="Konec", command=self.window_exit)
         
@@ -98,7 +98,11 @@ class ScrollableFrame(Frame):
         self.canvas.itemconfig(self.canvas_window, width=event.width)
 
     def _on_mousewheel(self, event):
-        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        try:
+            if self.canvas.winfo_exists():
+                self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        except TclError:
+            pass  
 
 #-------------------------------------------------------------------------        
 #PRVNI OKNO APLIKACE (main) - PRIPOJENI A OVLADANI SUBSYSTEMU PIEZA A MCU
@@ -469,7 +473,7 @@ class KalibracePage(ScrollableFrame):
 #Frame STAV
 class StavGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
-        super().__init__(parent, text="Stav", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
+        super().__init__(parent, text="Stav", padx=5, pady=5, bg="white",bd=5, relief="groove")
         self.controller = controller
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
@@ -500,7 +504,7 @@ class StavGUI(LabelFrame):
 #Frame ZPRACOVANI DAT
 class Typ_protokolGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
-        super().__init__(parent, text="Zpracování dat", padx=5, pady=5, bg="white", fg="black", bd=5, relief="groove")
+        super().__init__(parent, text="Zpracování dat", padx=5, pady=5, bg="white", bd=5, relief="groove")
         self.controller = controller
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
@@ -523,26 +527,31 @@ class Typ_protokolGUI(LabelFrame):
 #Frame KALIBRACE
 class KalibraceGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController', piezo_model : 'Piezo_model', mcu_model : 'MCU_model'):
-        super().__init__(parent, text="Kalibrace", padx=5, pady=5, bg="white",fg="black",bd=5, relief="groove")
+        super().__init__(parent, text="Kalibrace", padx=5, pady=5, bg="white",bd=5, relief="groove")
         self.controller = controller
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
         
         self.label_slozka = Label(self, text="Pracovní složka :", bg="white", width=20, anchor="w")
-        self.label_slozka_pracovni = Label(self, text="N/A", bg="white", width=30, anchor="w")
+        self.Entry_slozka_pracovni = Entry(self, width=30, state="normal")
+        self.Entry_slozka_pracovni.insert(0, "N/A")
+        self.Entry_slozka_pracovni.config(state="readonly")
         self.BTN_slozka_pracovni = Button(self, text="SLOŽKA", width=18, state="active", command=self.controller.kalibrace.vybrat_pracovni_slozku)
         
         self.label_strategie = Label(self, text="Strategie zpracování :", bg="white", width=20, anchor="w")
         self.label_strategie_vybrana = Label(self, text="N/A", bg ="white", width=30, anchor="w")
         self.strategie = ["-", "Dopředná", "Zpětná", "Hystereze", "Hystereze_2" ]
         self.vybrany_drop_strategie = StringVar()
-        self.drop_strategie = OptionMenu(self, self.vybrany_drop_strategie, *self.strategie,command=None)
+        self.vybrany_drop_strategie.set("-")
+        self.drop_strategie = OptionMenu(self, self.vybrany_drop_strategie, *self.strategie,command=lambda value: self.label_strategie_vybrana.config(text=value))
         self.drop_strategie.config(width=15)
         
         self.label_krok = Label(self, text="Délka kroku (μm):", bg="white", width=20, anchor="w")
-        self.entry_krok = Entry(self, width=25)
-        # self.entry_krok.bind("<Return>", lambda _ : self.controller.M_C_nastav_pohyb_piezo(self.entry_piezo_pohyb.get()))
-        self.BTN_krok = Button(self, text="Potvrdit", width=18, command=None)
+        self.entry_krok = Entry(self, width=30)
+        self.entry_krok.insert(0, "100")
+        self.entry_krok.bind("<Return>", lambda _ : self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get()))
+        self.BTN_krok = Button(self, text="Potvrdit", width=18, command= lambda: self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get()))
+        self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get())
         
         self.label_regulace = Label(self, text="Regulace teploty :", bg="white", width=20, anchor="w")
         self.regulace_var = StringVar(self, value="0")
@@ -550,14 +559,14 @@ class KalibraceGUI(LabelFrame):
         self.RB_regulace_teplota1 = Radiobutton(self, text="Regulace teploty", variable=self.regulace_var, value="1", bg="white", command=None, width=20, anchor="w")
         
         # self.label_odhad_cas = Label(self, text="Odhadovaný čas kalibrace :", bg="white", width=20, anchor="w")
-        self.label_kalibraceStart = Label(self, text="Start kalibrace :", bg="white", width=20, anchor="w")
-        self.BTN_kalibraceStart = Button(self, text="START", width=18, state="active", command=None)
+        self.label_kalibraceStart = Label(self, text="Start kalibrace :", bg="white", width=20, anchor="e")
+        self.BTN_kalibraceStart = Button(self, text="START", width=18, state="active", command= self.okno_kalibrace)
         
         self.publish()
         
     def publish(self):
         self.label_slozka.grid(row=0, column=0, padx=5, pady=5)
-        self.label_slozka_pracovni.grid(row=0, column=1, padx=5, pady=5)
+        self.Entry_slozka_pracovni.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         self.BTN_slozka_pracovni.grid(row=0, column=2, padx=5, pady=5, sticky="w")
         
         self.label_strategie.grid(row=1, column=0, padx=5, pady=5)
@@ -575,7 +584,46 @@ class KalibraceGUI(LabelFrame):
         
         self.label_kalibraceStart.grid(row=5, column=1, padx=5, pady=5, sticky="e")
         self.BTN_kalibraceStart.grid(row=5, column=2, padx=5, pady=5, sticky="w")
+        
+    def okno_kalibrace(self):
+        if (self.controller.piezo == True) and (self.controller.mcu == True):
+            self.okno_nove_kalibrace = KalibracniOkno(self.controller.view.root, self, self.controller)
+            self.BTN_kalibraceStart.config(state="disabled")
+            print(f"[KalibraceGUI] vytvoreni okna noveho")
+        else:
+            InfoMsg = f"CHYBA\nNesplněny podmínky zapnutí kalibrace"
+            messagebox.showinfo("Chyba", InfoMsg)
+            # print(f"[KalibraceGUI] vytvoreni okna noveho")
+            # self.okno_nove_kalibrace = KalibracniOkno(self.controller.view.root, self)
+            # self.BTN_kalibraceStart.config(state="disabled")
 
 if __name__ == "__main__":
     print("TOTO NENI HLAVNI APLIKACE")
     print("HLAVNI APLIKACE JE V SOUBORU main.py")
+
+
+class KalibracniOkno(Toplevel):
+    def __init__(self, parent, kalibrace_gui, controller : 'MainController'):
+        super().__init__(parent)
+        self.kalibrace_gui : KalibraceGUI = kalibrace_gui
+        self.controller = controller
+        self.title("Probíhá kalibrace")
+        self.geometry("500x500")
+        self.config(bg="white")
+        self.iconbitmap('icon/logo_uprava2.ico')
+        
+        self.scroll_frame = ScrollableFrame(self)
+        self.scroll_frame.pack(fill="both", expand=True)
+        
+        self.frame = self.scroll_frame.scrollable_frame
+        self.protocol("WM_DELETE_WINDOW", self.window_exit)
+        
+        self.controller.kalibrace.kalibrace_start()
+        
+    def window_exit(self):
+        # zavrit = messagebox.askyesno("Ukončení aplikace", "Upravdu si přejete ukončit aplikaci?")
+        # if zavrit:
+        #     print("Zavirani okna a vypnuti aplikace")
+        self.kalibrace_gui.BTN_kalibraceStart.config(state="active")
+        self.destroy()
+        print(f"[{self.__class__.__name__}] Zavirani okna")
