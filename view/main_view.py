@@ -546,12 +546,19 @@ class KalibraceGUI(LabelFrame):
         self.drop_strategie = OptionMenu(self, self.vybrany_drop_strategie, *self.strategie,command=lambda value: self.label_strategie_vybrana.config(text=value))
         self.drop_strategie.config(width=15)
         
-        self.label_krok = Label(self, text="Délka kroku (μm):", bg="white", width=20, anchor="w")
+        self.label_krok = Label(self, text="Délka kroku (μm) :", bg="white", width=20, anchor="w")
         self.entry_krok = Entry(self, width=30)
         self.entry_krok.insert(0, "100")
         self.entry_krok.bind("<Return>", lambda _ : self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get()))
         self.BTN_krok = Button(self, text="Potvrdit", width=18, command= lambda: self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get()))
         self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get())
+        
+        self.label_vzdalenost = Label(self, text="Měřená vzdálenost (μm) :", bg="white", width=20, anchor="w")
+        self.entry_vzdalenost = Entry(self, width=30)
+        self.entry_vzdalenost.insert(0, "10000")
+        self.entry_vzdalenost.bind("<Return>", lambda _ : self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get()))
+        self.BTN_vzdalenost = Button(self, text="Potvrdit", width=18, command=lambda: self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get()))
+        self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get())
         
         self.label_regulace = Label(self, text="Regulace teploty :", bg="white", width=20, anchor="w")
         self.regulace_var = StringVar(self, value="0")
@@ -577,9 +584,13 @@ class KalibraceGUI(LabelFrame):
         self.entry_krok.grid(row=2, column=1, padx=5, pady=5, sticky="w")
         self.BTN_krok.grid(row=2, column=2, padx=5, pady=5, sticky="w")
         
-        self.label_regulace.grid(row=3, column=0, padx=5, pady=5)
-        self.RB_regulace_teplota0.grid(row=3, column=1, padx=5, pady=5, sticky="w")
-        self.RB_regulace_teplota1.grid(row=3, column=2, padx=5, pady=5, sticky="w")
+        self.label_vzdalenost.grid(row=3, column=0, padx=5, pady=5)
+        self.entry_vzdalenost.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        self.BTN_vzdalenost.grid(row=3, column=2, padx=5, pady=5, sticky="w")
+        
+        self.label_regulace.grid(row=4, column=0, padx=5, pady=5)
+        self.RB_regulace_teplota0.grid(row=4, column=1, padx=5, pady=5, sticky="w")
+        self.RB_regulace_teplota1.grid(row=4, column=2, padx=5, pady=5, sticky="w")
         # self.label_odhad_cas.grid(row=4, column=0, padx=5, pady=5)
         
         self.label_kalibraceStart.grid(row=5, column=1, padx=5, pady=5, sticky="e")

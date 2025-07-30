@@ -5,6 +5,10 @@ import threading
 import time
 import queue
 import re
+import csv
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
 from view.main_view import MainPage, KalibracePage
 from typing import TYPE_CHECKING
 
@@ -22,7 +26,9 @@ class KalibraceController():
         self.piezo_model : Piezo_model = piezo_model
         self.mcu_model : MCU_model = mcu_model
         self.pracovni_slozka = None
+        self.pracovni_soubor = None
         self.delka_kroku = None
+        self.merena_vzdalenost = None
         
         #Zpracovani dat
         self.protokol ={"1" : "A/D převodník",
@@ -39,9 +45,13 @@ class KalibraceController():
         print(f"[KalibraceController] vybrany protokol : {self.protokol[protokol]}")
         # print(f"[{self.__class__.__name__}] protokol: {self.controller.protokol_gui.vybrane_var.get()}") #stejna odpoved
         
-    def nastavit_delku_kroku(self, delka):       
-        self.delka_kroku = delka
-        print(f"[{self.__class__.__name__}] delka kroku je {self.delka_kroku}")
+    def nastavit_delku_kroku(self, krok):       
+        self.delka_kroku = krok
+        print(f"[{self.__class__.__name__}] delka kroku je {self.delka_kroku} (um)")
+        
+    def nastavit_delku_vzdalenost(self, vzdalenost):
+        self.merena_vzdalenost = vzdalenost
+        print(f"[{self.__class__.__name__}] merena vzdalenost je {self.merena_vzdalenost} (um)")
       
     def vybrat_pracovni_slozku(self):
         self.pracovni_slozka = filedialog.askdirectory(title="Pracovní složka")
@@ -64,23 +74,43 @@ class KalibraceController():
         print(f"[{self.__class__.__name__}] kalibrace_start")
         self.controller.M_C_Index()
         
+        if self.pracovni_slozka is not None:
+            cesta = os.path.join(self.pracovni_slozka, "temp.csv")
+            
+        #Kalibrace #1
         def kalibrace_start_inner():
             time.sleep(5) #delay kvuli index pozici
-            print(f"[{self.__class__.__name__}] VLAKNO!")
+            print(f"[{self.__class__.__name__}] VLAKNO KALIBRACE!")
+            
+            #zacatek vytvoreni docasneho souboru a zapis do nej
+            # with open(cesta, "w", newline='') as file:
+            #     writer = csv.writer(file)
+            #     writer.writerow(["cas", "pozice", "frekvence"]) #hlavicka
+                
+            #cekani na vychozi pozici kalibrace
             while True:
                 time.sleep(0.5)
                 try:
                     if self.piezo_model.is_homed == True:
+
                         print(f"[{self.__class__.__name__}] HOMED!")
                         self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000")
-                        time.sleep(4) #CAS NEZ DOJEDE NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000")
+                        time.sleep(5) #CAS NEZ DOJEDE NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000")
                         self.controller.M_C_nastav_referenci()
                         break
-                            
-                
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] chyba ({e})")
-                    break
+
+            #smycka pro sber dat a zapis do souboru 
+            while True:
+                time.sleep(2)
+                print(f"[{self.__class__.__name__}] CTENI FREKVENCE !!")
+                self.mcu_model.precist_frekvenci(10)
+                
+
+                
+                
+            
         
         self.t1 = threading.Thread(target=kalibrace_start_inner, daemon=True)
         self.t1.start()

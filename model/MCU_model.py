@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
+import re
 import threading
+import time
 
 if TYPE_CHECKING:
     from model.Serial_model import SerialCtrl
@@ -41,7 +43,52 @@ class MCU_model():
         
     def zapsat_teplotu(self):
         self.teplota_okoli = self.posledni_odpoved_MCU
+    
+    #cteni frekvence pres UART, n je pocet mereni frekvence - kolikrat ji chci poslat
+    def precist_frekvenci(self, n : int):
+        self.frekvence_data = []
+        self.n = n
         
+        #vytvoreni zpravy pro n pocet mereni
+        msg = f"#D{self.n}"
+        self.mcu_serial.send_msg_simple(msg)
+        
+        def cteni_frekvence():
+            while len(self.frekvence_data) < self.n:
+                time.sleep(0.1)
+                try:
+                    #jeden prichozi vzorek
+                    data_raw = self.mcu_serial.ser.readline().decode().strip()
+                    freq = self.dekodovat('f', data_raw)
+                    if freq:
+                        self.frekvence_data.append(freq)
+                        print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
+                    else:
+                        self.frekvence_data.append(0)
+                        print(f"[{self.__class__.__name__} příchozí frekvence: {freq} -- CHYBA!!]")
+                except Exception as e:
+                    print(f"[{self.__class__.__name__}] {e} -- CHYBA!!")
+        
+        self.t1 = threading.Thread(target=cteni_frekvence, daemon=True)
+        self.t1.start()
             
+    def dekodovat(self, typ, data):
+        self.typ = typ
+        self.data = data
+        
+        #dekodovani frekvence ze stringu:
+        if (self.typ == 'f'):
+            #priklad prichozi zpravy string data: delta=526, F=273764 Hz<\r><\n> - hterm
+            #tvoreny string v C:snprintf(gu8_MSG, sizeof(gu8_MSG), "delta=%d, F=%d Hz\r\n", delta, (uint32_t)freq);
+            #chci vytahnout jen to cislo za F= , popripade i staci delta jenom a dopocitat frekvenci v PC
+            #hledat F= cislo
+            match = re.search(r'F=(\d+)', self.data)
+            if match:
+                return(int(match.group(1)))
+            else:
+                print(f"[{self.__class__.__name__}] NEDEKODOVANA FREKVENCE -- CHYBA !!")
+                return 0
+            
+        return None
         
         
