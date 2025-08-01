@@ -29,6 +29,8 @@ class KalibraceController():
         self.pracovni_soubor = None
         self.delka_kroku = None
         self.merena_vzdalenost = None
+        self.pocet_kroku = None #pocet kroku pro mereni = pocet iteraci ve for smycce
+        self.pocet_zaznamu = 10
         
         #Zpracovani dat
         self.protokol ={"1" : "A/D převodník",
@@ -70,8 +72,8 @@ class KalibraceController():
             self.controller.kalibrace_gui.Entry_slozka_pracovni.config(state="readonly")
             
             
-    def kalibrace_start(self):
-        print(f"[{self.__class__.__name__}] kalibrace_start")
+    def kalibrace_start_pulzy(self):
+        print(f"[{self.__class__.__name__}] kalibrace_start_pulzy !!")
         self.controller.M_C_Index()
         
         if self.pracovni_slozka is not None:
@@ -81,20 +83,21 @@ class KalibraceController():
         def kalibrace_start_inner():
             time.sleep(5) #delay kvuli index pozici
             print(f"[{self.__class__.__name__}] VLAKNO KALIBRACE!")
-            
+            self.pocet_kroku = int(self.merena_vzdalenost) / int(self.delka_kroku)
             #zacatek vytvoreni docasneho souboru a zapis do nej
             # with open(cesta, "w", newline='') as file:
             #     writer = csv.writer(file)
             #     writer.writerow(["cas", "pozice", "frekvence"]) #hlavicka
-                
+                  
             #cekani na vychozi pozici kalibrace
+            #zajede na pozici a ceka na dalsi ukoly
             while True:
                 time.sleep(0.5)
                 try:
                     if self.piezo_model.is_homed == True:
 
                         print(f"[{self.__class__.__name__}] HOMED!")
-                        self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000")
+                        self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000") #pozice - max v Y
                         time.sleep(5) #CAS NEZ DOJEDE NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000")
                         self.controller.M_C_nastav_referenci()
                         break
@@ -102,10 +105,30 @@ class KalibraceController():
                     print(f"[{self.__class__.__name__}] chyba ({e})")
 
             #smycka pro sber dat a zapis do souboru 
-            while True:
-                time.sleep(2)
+            #doresit - vymenit while za for - a pocitat do max vzdalenosti -- inkrementace piezo dle vzdalenosti
+            #zapisovani do souboru vzdalenost - pozice cteni + frekvence X dat,... cas..
+            #casova narocnost posunuti pieza urcit ze zrychleni, rychlosti a vzdalenosti posunu - promenny time.sleep(x) 
+            #myslet na propojeni s promennymi - mozna do frony pro vykreslovani do grafu v realtime
+            #ulozit - nacitani grafu v jinych mistech aplikace - filtrace dat
+            cnt = 0
+            for _ in range(int(self.pocet_kroku)):
+                
+                while self.mcu_model.lock_frekvence == False:
+                    time.sleep(0.01) 
+                    
+                if cnt == 1:
+                    #zapsat mcu frekvence a piezo polohu
+                    self.mcu_model.frekvence prepsat
+                    self.piezo_model. pozice piezo
+                    self.piezo_model.posunout                
+                
+                #nastavit pozici - prvi iterace nulove posunuti
+                #time sleep dle rychlosti    
+                self.mcu_model.lock_frekvence = False
                 print(f"[{self.__class__.__name__}] CTENI FREKVENCE !!")
-                self.mcu_model.precist_frekvenci(10)
+                self.mcu_model.precist_frekvenci(int(self.pocet_zaznamu))
+                
+                cnt = 1
                 
 
                 

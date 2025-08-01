@@ -546,15 +546,18 @@ class KalibraceGUI(LabelFrame):
         self.drop_strategie = OptionMenu(self, self.vybrany_drop_strategie, *self.strategie,command=lambda value: self.label_strategie_vybrana.config(text=value))
         self.drop_strategie.config(width=15)
         
+        #KROK a vzdalenost - omezeni na cislo
+        validace_cmd = (self.controller.root.register(self.je_int), "%P")
+        
         self.label_krok = Label(self, text="Délka kroku (μm) :", bg="white", width=20, anchor="w")
-        self.entry_krok = Entry(self, width=30)
+        self.entry_krok = Entry(self, width=30, validate="key", validatecommand=validace_cmd)
         self.entry_krok.insert(0, "100")
         self.entry_krok.bind("<Return>", lambda _ : self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get()))
         self.BTN_krok = Button(self, text="Potvrdit", width=18, command= lambda: self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get()))
         self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get())
         
         self.label_vzdalenost = Label(self, text="Měřená vzdálenost (μm) :", bg="white", width=20, anchor="w")
-        self.entry_vzdalenost = Entry(self, width=30)
+        self.entry_vzdalenost = Entry(self, width=30, validate="key", validatecommand=validace_cmd)
         self.entry_vzdalenost.insert(0, "10000")
         self.entry_vzdalenost.bind("<Return>", lambda _ : self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get()))
         self.BTN_vzdalenost = Button(self, text="Potvrdit", width=18, command=lambda: self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get()))
@@ -595,12 +598,21 @@ class KalibraceGUI(LabelFrame):
         
         self.label_kalibraceStart.grid(row=5, column=1, padx=5, pady=5, sticky="e")
         self.BTN_kalibraceStart.grid(row=5, column=2, padx=5, pady=5, sticky="w")
-        
+    
+    def je_int(self, vstup):
+        if vstup in (""):
+            return True
+        try:
+            int(vstup)
+            return True
+        except ValueError:
+            return False
+    
     def okno_kalibrace(self):
-        if (self.controller.piezo == True) and (self.controller.mcu == True):
-            self.okno_nove_kalibrace = KalibracniOkno(self.controller.view.root, self, self.controller)
+        if (self.controller.piezo == True) and (self.controller.mcu == True):    
             self.BTN_kalibraceStart.config(state="disabled")
             print(f"[KalibraceGUI] vytvoreni okna noveho")
+            self.okno_nove_kalibrace = KalibracniOkno(self.controller.view.root, self, self.controller)
         else:
             InfoMsg = f"CHYBA\nNesplněny podmínky zapnutí kalibrace"
             messagebox.showinfo("Chyba", InfoMsg)
@@ -629,7 +641,11 @@ class KalibracniOkno(Toplevel):
         self.frame = self.scroll_frame.scrollable_frame
         self.protocol("WM_DELETE_WINDOW", self.window_exit)
         
-        self.controller.kalibrace.kalibrace_start()
+        if self.controller.protokol_gui.vybrane_var.get() == "2":
+            self.controller.kalibrace.kalibrace_start_pulzy()
+        else:
+            print("Špatně vybraná konfigurace !!")
+            self.window_exit()
         
     def window_exit(self):
         # zavrit = messagebox.askyesno("Ukončení aplikace", "Upravdu si přejete ukončit aplikaci?")

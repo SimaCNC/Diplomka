@@ -23,9 +23,12 @@ class MainController():
         self.piezo_is_homed_kalibrace = False
         self.mcu = False
         self.main_page = None
+        
 
         
         self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
+        self.lock_1 = True #odemknuto
+        
         
 #PRIRAZOVANI POHLEDU
     def set_main_page(self, main_page : 'MainPage'):
