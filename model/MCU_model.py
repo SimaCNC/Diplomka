@@ -10,6 +10,7 @@ class MCU_model():
     def __init__(self, mcu_serial : 'SerialCtrl'):
         self.mcu_serial = mcu_serial 
         self.lock_frekvence = True #odemknuto
+        self.frekvence_vzorky = []
         
         self.posledni_odpoved_MCU = None
         self.teplota_okoli = None
@@ -47,7 +48,6 @@ class MCU_model():
     
     #cteni frekvence pres UART, n je pocet mereni frekvence - kolikrat ji chci poslat
     def precist_frekvenci(self, n : int):
-        self.frekvence_vzorky = []
         self.n = n
         
         #vytvoreni zpravy pro n pocet mereni
@@ -55,6 +55,7 @@ class MCU_model():
         self.mcu_serial.send_msg_simple(msg)
         
         def cteni_frekvence():
+            self.frekvence_vzorky.clear()
             while len(self.frekvence_vzorky) < self.n:
                 time.sleep(0.05)
                 try:
@@ -63,14 +64,15 @@ class MCU_model():
                     freq = self.dekodovat('f', data_raw)
                     if freq:
                         self.frekvence_vzorky.append(freq)
-                        print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
+                        # print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
                     else:
                         self.frekvence_vzorky.append(0)
                         print(f"[{self.__class__.__name__} příchozí frekvence: {freq} -- CHYBA!!]")
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] {e} -- CHYBA!!")
-        
+
             self.lock_frekvence = True
+            
             
         self.t1 = threading.Thread(target=cteni_frekvence, daemon=True)
         self.t1.start()

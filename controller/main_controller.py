@@ -28,7 +28,7 @@ class MainController():
         
         self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
         self.lock_1 = True #odemknuto
-        
+        self.lock_pohyb = True
         
 #PRIRAZOVANI POHLEDU
     def set_main_page(self, main_page : 'MainPage'):
@@ -162,7 +162,9 @@ class MainController():
         self.piezo_gui.label_pozice_referenceX_piezo.config(text=f"Xr: {self.piezo_model.x_ref:.3f}")
         self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr: {self.piezo_model.y_ref:.3f}")
         self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr: {self.piezo_model.z_ref:.3f}")
+        
         self.M_C_enable_piezo_buttons()
+        self.lock_pohyb = True
                                     
     def M_C_nastav_referenci(self):
         print("[NASTAVENI REFERENCE]")
@@ -205,6 +207,7 @@ class MainController():
         self.piezo_gui.label_piezo_pohyb_nastavene_text.config(text=self.piezo_model.velikost_pohybu)
 
     def M_C_pohyb_piezo(self, smer):
+        self.lock_pohyb = False
         self.M_C_disable_piezo_buttons()
         self.piezo_model.pohyb_piezo(smer)
         

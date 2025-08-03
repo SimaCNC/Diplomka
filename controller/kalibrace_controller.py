@@ -3,6 +3,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 import threading
 import time
+import pandas as pd
 import queue
 import re
 import csv
@@ -10,6 +11,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from view.main_view import MainPage, KalibracePage
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 
@@ -30,7 +32,14 @@ class KalibraceController():
         self.delka_kroku = None
         self.merena_vzdalenost = None
         self.pocet_kroku = None #pocet kroku pro mereni = pocet iteraci ve for smycce
-        self.pocet_zaznamu = 10
+        self.pocet_zaznamu = 10 #implementovat do GUI pro kalibraci
+        
+        
+        self.vzorky = []
+        self.poloha = 0
+        
+        #fronta pro vytvareni grafu:
+        self.queue_graf = queue.Queue()
         
         #Zpracovani dat
         self.protokol ={"1" : "A/D převodník",
@@ -79,56 +88,79 @@ class KalibraceController():
         if self.pracovni_slozka is not None:
             cesta = os.path.join(self.pracovni_slozka, "temp.csv")
             
+            
         #Kalibrace #1
         def kalibrace_start_inner():
             time.sleep(5) #delay kvuli index pozici
             print(f"[{self.__class__.__name__}] VLAKNO KALIBRACE!")
             self.pocet_kroku = int(self.merena_vzdalenost) / int(self.delka_kroku)
             #zacatek vytvoreni docasneho souboru a zapis do nej
-            # with open(cesta, "w", newline='') as file:
-            #     writer = csv.writer(file)
-            #     writer.writerow(["cas", "pozice", "frekvence"]) #hlavicka
+            with open(cesta, "w", newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["cas", "pozice", "frekvence"]) #hlavicka
                   
-            #cekani na vychozi pozici kalibrace
-            #zajede na pozici a ceka na dalsi ukoly
-            while True:
-                time.sleep(0.5)
-                try:
-                    if self.piezo_model.is_homed == True:
+                #cekani na vychozi pozici kalibrace
+                #zajede na pozici a ceka na dalsi ukoly
+                while True:
+                    time.sleep(0.5)
+                    try:
+                        if self.piezo_model.is_homed == True:
 
-                        print(f"[{self.__class__.__name__}] HOMED!")
-                        self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000") #pozice - max v Y
-                        time.sleep(5) #CAS NEZ DOJEDE NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000")
-                        self.controller.M_C_nastav_referenci()
-                        break
-                except Exception as e:
-                    print(f"[{self.__class__.__name__}] chyba ({e})")
+                            print(f"[{self.__class__.__name__}] HOMED!")
+                            self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000") #pozice - max v Y
+                            time.sleep(5) #CAS NEZ DOJEDE NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000")
+                            self.controller.M_C_nastav_referenci()
+                            break
+                    except Exception as e:
+                        print(f"[{self.__class__.__name__}] chyba ({e})")
 
-            #smycka pro sber dat a zapis do souboru 
-            #doresit - vymenit while za for - a pocitat do max vzdalenosti -- inkrementace piezo dle vzdalenosti
-            #zapisovani do souboru vzdalenost - pozice cteni + frekvence X dat,... cas..
-            #casova narocnost posunuti pieza urcit ze zrychleni, rychlosti a vzdalenosti posunu - promenny time.sleep(x) 
-            #myslet na propojeni s promennymi - mozna do frony pro vykreslovani do grafu v realtime
-            #ulozit - nacitani grafu v jinych mistech aplikace - filtrace dat
-            cnt = 0
-            for _ in range(int(self.pocet_kroku)):
-                
-                while self.mcu_model.lock_frekvence == False:
-                    time.sleep(0.01) 
+                #smycka pro sber dat a zapis do souboru 
+                #doresit - vymenit while za for - a pocitat do max vzdalenosti -- inkrementace piezo dle vzdalenosti
+                #zapisovani do souboru vzdalenost - pozice cteni + frekvence X dat,... cas..
+                #casova narocnost posunuti pieza urcit ze zrychleni, rychlosti a vzdalenosti posunu - promenny time.sleep(x) 
+                #myslet na propojeni s promennymi - mozna do frony pro vykreslovani do grafu v realtime
+                #ulozit - nacitani grafu v jinych mistech aplikace - filtrace dat
+                iterace = 0
+                prvni_zapis = not os.path.exists(cesta)
+                for _ in range(int(self.pocet_kroku) + 2):
                     
-                if cnt == 1:
-                    #zapsat mcu frekvence a piezo polohu
-                    self.mcu_model.frekvence prepsat
-                    self.piezo_model. pozice piezo
-                    self.piezo_model.posunout                
+
+                    while self.mcu_model.lock_frekvence == False:
+                        time.sleep(0.1) 
+
+                    if iterace > 0:
+                        #zapsat mcu frekvence a piezo polohu
+                        self.vzorky = self.mcu_model.frekvence_vzorky.copy()
+                        self.poloha = int(self.piezo_model.y_ref)
+                        cas = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+
+                        df = pd.DataFrame({
+                                "cas": [cas]*len(self.vzorky),
+                                "pozice": [self.poloha]*len(self.vzorky),
+                                "frekvence": self.vzorky
+                            })
+                        
+                        df.to_csv(cesta, mode='a', header=prvni_zapis, index=False)
+                        prvni_zapis = False
+
+                        self.controller.M_C_nastav_pohyb_piezo(int(self.delka_kroku))
+                        self.controller.M_C_pohyb_piezo("y-")
+                        while self.controller.lock_pohyb == False:
+                            time.sleep(0.1)               
+
+                    #nastavit pozici - prvi iterace nulove posunuti
+                    #time sleep dle rychlosti    
+                    self.mcu_model.lock_frekvence = False
+                    
+                    if iterace < int(self.pocet_kroku) + 2:
+                        print(iterace)
+                        print(f"[{self.__class__.__name__}] CTENI FREKVENCE !!")
+                        self.mcu_model.precist_frekvenci(int(self.pocet_zaznamu))
+                    
+                    iterace = iterace + 1
+                  
+                print(f"[{self.__class__.__name__}] sběr dat hotový")  
                 
-                #nastavit pozici - prvi iterace nulove posunuti
-                #time sleep dle rychlosti    
-                self.mcu_model.lock_frekvence = False
-                print(f"[{self.__class__.__name__}] CTENI FREKVENCE !!")
-                self.mcu_model.precist_frekvenci(int(self.pocet_zaznamu))
-                
-                cnt = 1
                 
 
                 
