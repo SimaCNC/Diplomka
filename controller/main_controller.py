@@ -49,7 +49,23 @@ class MainController():
         self.view.add_frame("kalibrace", KalibracePage, self, self.piezo_model, self.mcu_model)
         #self.view.add_frame("nápověda")
         self.view.show_frame("main")
-        
+
+#zablokovani vsech widgetu
+    def blok_widgets(self, root : 'Tk'):
+        for widget in root.winfo_children():
+            if isinstance(widget, (Button, Entry, OptionMenu)):
+                widget.config(state="disabled")
+            elif widget.winfo_children():
+                self.blok_widgets(widget)
+                
+#odblokovani vsech widgetu
+    def odblok_widgets(self, root : 'Tk'):
+        for widget in root.winfo_children():
+            if isinstance(widget, (Button, Entry, OptionMenu)):
+                widget.config(state="normal")
+            elif widget.winfo_children():
+                self.odblok_widgets(widget)    
+    
 #MAIN PAGE
 #M_C GUI PRO MAIN POHLED
     def M_serial_connect_piezo(self):

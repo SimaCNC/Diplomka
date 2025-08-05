@@ -17,3 +17,6 @@ cisla u popisku v controlleru odpovidaji cca strane kde se spojitost vyskytuje
 - je potreba zacit kreslit diagram dedeni apod.
 -hledat mista k osetreni (Start kalibrace - verifikace podminek, )
 - Detailne testovat aplikaci pro bugy, zrejme pri startu kalibrace sekvence rizeni piezopohonu problemy s vlakny race conditions, seriova linka
+-popsat co jaka strategie dela: self.strategie = ["-", "Dopředná", "Zpětná","Opakovatelnost", "Hystereze", "Hystereze_2" ]
+
+-vymyslet snimace a pouziti

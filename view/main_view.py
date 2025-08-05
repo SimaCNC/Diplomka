@@ -1,6 +1,8 @@
 from tkinter import *
 from typing import TYPE_CHECKING
 from tkinter import messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 
 if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
@@ -532,6 +534,8 @@ class KalibraceGUI(LabelFrame):
         self.piezo_model = piezo_model
         self.mcu_model = mcu_model
         
+        #pridat pocet vzorku na pozici
+        
         self.label_slozka = Label(self, text="Pracovní složka :", bg="white", width=20, anchor="w")
         self.Entry_slozka_pracovni = Entry(self, width=30, state="normal")
         self.Entry_slozka_pracovni.insert(0, "N/A")
@@ -540,13 +544,13 @@ class KalibraceGUI(LabelFrame):
         
         self.label_strategie = Label(self, text="Strategie zpracování :", bg="white", width=20, anchor="w")
         self.label_strategie_vybrana = Label(self, text="N/A", bg ="white", width=30, anchor="w")
-        self.strategie = ["-", "Dopředná", "Zpětná", "Hystereze", "Hystereze_2" ]
+        self.strategie = ["-", "Dopředná", "Zpětná","Opakovatelnost", "Hystereze", "Hystereze_2" ]
         self.vybrany_drop_strategie = StringVar()
         self.vybrany_drop_strategie.set("-")
         self.drop_strategie = OptionMenu(self, self.vybrany_drop_strategie, *self.strategie,command=lambda value: self.label_strategie_vybrana.config(text=value))
         self.drop_strategie.config(width=15)
         
-        #KROK a vzdalenost - omezeni na cislo
+        #validace- omezeni na cislo
         validace_cmd = (self.controller.root.register(self.je_int), "%P")
         
         self.label_krok = Label(self, text="Délka kroku (μm) :", bg="white", width=20, anchor="w")
@@ -562,6 +566,13 @@ class KalibraceGUI(LabelFrame):
         self.entry_vzdalenost.bind("<Return>", lambda _ : self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get()))
         self.BTN_vzdalenost = Button(self, text="Potvrdit", width=18, command=lambda: self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get()))
         self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get())
+        
+        self.label_pocet_vzorku = Label(self, text="Počet vzorků :", bg="white", width=20, anchor="w")
+        self.entry_pocet_vzorku = Entry(self, width=30, validate="key", validatecommand=validace_cmd)
+        self.entry_pocet_vzorku.insert(0, "10")
+        self.entry_pocet_vzorku.bind("<Return>", lambda _ : self.controller.kalibrace.nastavit_vzorky(self.entry_pocet_vzorku.get()))
+        self.BTN_pocet_vzorku = Button(self, text="Potvrdit", width=18, command= lambda: self.controller.kalibrace.nastavit_vzorky(self.entry_pocet_vzorku.get()))
+        self.controller.kalibrace.nastavit_vzorky(self.entry_pocet_vzorku.get())
         
         self.label_regulace = Label(self, text="Regulace teploty :", bg="white", width=20, anchor="w")
         self.regulace_var = StringVar(self, value="0")
@@ -591,13 +602,17 @@ class KalibraceGUI(LabelFrame):
         self.entry_vzdalenost.grid(row=3, column=1, padx=5, pady=5, sticky="w")
         self.BTN_vzdalenost.grid(row=3, column=2, padx=5, pady=5, sticky="w")
         
-        self.label_regulace.grid(row=4, column=0, padx=5, pady=5)
-        self.RB_regulace_teplota0.grid(row=4, column=1, padx=5, pady=5, sticky="w")
-        self.RB_regulace_teplota1.grid(row=4, column=2, padx=5, pady=5, sticky="w")
+        self.label_pocet_vzorku.grid(row=4, column=0, padx=5, pady=5)
+        self.entry_pocet_vzorku.grid(row=4, column=1, padx=5, pady=5, sticky="w")
+        self.BTN_pocet_vzorku.grid(row=4, column=2, padx=5, pady=5, sticky="w")  
+    
+        self.label_regulace.grid(row=5, column=0, padx=5, pady=5)
+        self.RB_regulace_teplota0.grid(row=5, column=1, padx=5, pady=5, sticky="w")
+        self.RB_regulace_teplota1.grid(row=5, column=2, padx=5, pady=5, sticky="w")
         # self.label_odhad_cas.grid(row=4, column=0, padx=5, pady=5)
         
-        self.label_kalibraceStart.grid(row=5, column=1, padx=5, pady=5, sticky="e")
-        self.BTN_kalibraceStart.grid(row=5, column=2, padx=5, pady=5, sticky="w")
+        self.label_kalibraceStart.grid(row=6, column=1, padx=5, pady=5, sticky="e")
+        self.BTN_kalibraceStart.grid(row=6, column=2, padx=5, pady=5, sticky="w")
     
     def je_int(self, vstup):
         if vstup in (""):
@@ -641,16 +656,25 @@ class KalibracniOkno(Toplevel):
         self.frame = self.scroll_frame.scrollable_frame
         self.protocol("WM_DELETE_WINDOW", self.window_exit)
         
-        if self.controller.protokol_gui.vybrane_var.get() == "2":
-            self.controller.kalibrace.kalibrace_start_pulzy()
+        #vyber metody kalibrace
+        if self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+            self.controller.kalibrace.kalibrace_start_pulzy_dopredna()
+            self.controller.blok_widgets(self.controller.root)
         else:
             print("Špatně vybraná konfigurace !!")
             self.window_exit()
+            
+        self.data_casy = []
+        self.data_pozice = []
+        self.data_vzorky = []
         
+        
+
     def window_exit(self):
         # zavrit = messagebox.askyesno("Ukončení aplikace", "Upravdu si přejete ukončit aplikaci?")
         # if zavrit:
         #     print("Zavirani okna a vypnuti aplikace")
+        self.controller.odblok_widgets(self.controller.root)
         self.kalibrace_gui.BTN_kalibraceStart.config(state="active")
         self.destroy()
         print(f"[{self.__class__.__name__}] Zavirani okna")

@@ -19,7 +19,8 @@ class MCU_model():
             "OSC" : "OSC"
         }        
         
-     
+        self.vzorky = 10
+      
     def msg_odpoved(self, callback_fun = None):
         """ odpoved od MCU"""
         
@@ -49,15 +50,14 @@ class MCU_model():
     #cteni frekvence pres UART, n je pocet mereni frekvence - kolikrat ji chci poslat
     def precist_frekvenci(self, n : int):
         self.n = n
-        
+        self.frekvence_vzorky.clear()
         #vytvoreni zpravy pro n pocet mereni
-        msg = f"#D{self.n}"
-        self.mcu_serial.send_msg_simple(msg)
+        self.lock_frekvence = False
+        self.mcu_serial.ser.reset_input_buffer()
         
         def cteni_frekvence():
-            self.frekvence_vzorky.clear()
+            
             while len(self.frekvence_vzorky) < self.n:
-                time.sleep(0.05)
                 try:
                     #jeden prichozi vzorek
                     data_raw = self.mcu_serial.ser.readline().decode().strip()
@@ -66,7 +66,7 @@ class MCU_model():
                         self.frekvence_vzorky.append(freq)
                         # print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
                     else:
-                        self.frekvence_vzorky.append(0)
+                        self.frekvence_vzorky.append(freq)
                         print(f"[{self.__class__.__name__} příchozí frekvence: {freq} -- CHYBA!!]")
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] {e} -- CHYBA!!")
@@ -76,6 +76,10 @@ class MCU_model():
             
         self.t1 = threading.Thread(target=cteni_frekvence, daemon=True)
         self.t1.start()
+        
+        msg = f"#D{self.n}"
+        self.mcu_serial.send_msg_simple(msg) 
+            
             
     def dekodovat(self, typ, data):
         self.typ = typ
@@ -95,5 +99,7 @@ class MCU_model():
                 return 0
             
         return None
+    
+    
         
         
