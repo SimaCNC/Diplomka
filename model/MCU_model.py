@@ -11,6 +11,7 @@ class MCU_model():
         self.mcu_serial = mcu_serial 
         self.lock_frekvence = True #odemknuto
         self.frekvence_vzorky = []
+        self.teplota_vzorky = []
         
         self.posledni_odpoved_MCU = None
         self.teplota_okoli = None
@@ -51,6 +52,8 @@ class MCU_model():
     def precist_frekvenci(self, n : int):
         self.n = n
         self.frekvence_vzorky.clear()
+        self.teplota_vzorky.clear()
+        
         #vytvoreni zpravy pro n pocet mereni
         self.lock_frekvence = False
         self.mcu_serial.ser.reset_input_buffer()
@@ -62,8 +65,11 @@ class MCU_model():
                     #jeden prichozi vzorek
                     data_raw = self.mcu_serial.ser.readline().decode().strip()
                     freq = self.dekodovat('f', data_raw)
+                    teplota = self.dekodovat('t', data_raw)
                     if freq:
                         self.frekvence_vzorky.append(freq)
+                        if teplota:
+                            self.teplota_vzorky.append(teplota)
                         # print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
                     else:
                         self.frekvence_vzorky.append(freq)
@@ -87,7 +93,7 @@ class MCU_model():
         
         #dekodovani frekvence ze stringu:
         if (self.typ == 'f'):
-            #priklad prichozi zpravy string data: delta=526, F=273764 Hz<\r><\n> - hterm
+            #priklad prichozi zpravy string data: delta=1290, F=111627, T=25.2 <\r><\n> - hterm
             #tvoreny string v C:snprintf(gu8_MSG, sizeof(gu8_MSG), "delta=%d, F=%d Hz\r\n", delta, (uint32_t)freq);
             #chci vytahnout jen to cislo za F= , popripade i staci delta jenom a dopocitat frekvenci v PC
             #hledat F= cislo
@@ -97,6 +103,16 @@ class MCU_model():
             else:
                 print(f"[{self.__class__.__name__}] NEDEKODOVANA FREKVENCE -- CHYBA !!")
                 return 0
+            
+        elif (self.typ == 't'):
+            #priklad prichozi zpravy string data: delta=1290, F=111627, T=25.2 <\r><\n> - hterm
+            match = re.search(r'T=(\d+(?:\.\d+)?)', self.data)
+            if match:
+                return(float(match.group(1)))
+            else:
+                print(f"[{self.__class__.__name__}] NEDEKODOVANA TEPLOTA -- CHYBA !!")
+                return 0
+        
             
         return None
     

@@ -52,7 +52,13 @@ class SerialCtrl():
         
     def get_msg_simple(self, callback = None): #CALLBACK JE FUNKCE, KTERA JE VLOZENA JAKO ARGUMENT - FLEXIBILNI POUZITI FUNKCE get_msg_simple!!
         try:
-            data = self.ser.readline().decode().strip()
+            data = None
+            
+            # #vycisteni bufferu
+            # while self.ser.in_waiting > 0:
+            #     data = self.ser.readline().decode().strip()
+            data = self.ser.readline().decode().strip() 
+                
             if data:
                 print(f"[SerialCtrl]:přijaté data: {data}")
                 if callback:

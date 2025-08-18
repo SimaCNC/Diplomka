@@ -8,10 +8,13 @@ import queue
 import re
 import csv
 import os
-import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
 import matplotlib.pyplot as plt
 from view.main_view import MainPage, KalibracePage
 from datetime import datetime
+
 from typing import TYPE_CHECKING
 
 
@@ -33,9 +36,11 @@ class KalibraceController():
         self.merena_vzdalenost = None
         self.pocet_kroku = None #pocet kroku pro mereni = pocet iteraci ve for smycce
         self.pocet_zaznamu = 10
+        self.kalibrace = False
         
         
         self.vzorky = []
+        self.teplota = []
         self.poloha = 0
         
         #fronta pro vytvareni grafu:
@@ -96,27 +101,26 @@ class KalibraceController():
         else:
             self.pocet_zaznamu = pocet
             print(f"[{self.__class__.__name__}] nastavený počet vzorků je nastaven na {self.pocet_zaznamu}")
+          
             
     def kalibrace_start_pulzy_dopredna(self):
         print(f"[{self.__class__.__name__}] kalibrace_start_pulzy !!")
         self.controller.M_C_Index()
         
         if self.pracovni_slozka is not None:
-            cesta = os.path.join(self.pracovni_slozka, "temp.csv")
+            cesta_csv = os.path.join(self.pracovni_slozka, f"temp.csv")
+            cesta_xlsx = os.path.join(self.pracovni_slozka, f"temp.xlsx")
             
             
         #Kalibrace #1
         def kalibrace_start_inner():
+            self.kalibrace = True #start kalibrace
             time.sleep(5) #delay kvuli index pozici
             print(f"[{self.__class__.__name__}] VLAKNO KALIBRACE!")
             self.pocet_kroku = int(self.merena_vzdalenost) / int(self.delka_kroku)
             #zacatek vytvoreni docasneho souboru a zapis do nej
-            # with open(cesta, "w", newline='') as file:
-            #     writer = csv.writer(file)
-            #     writer.writerow(["cas", "pozice", "frekvence"]) #hlavicka
-                  
-            df_header = pd.DataFrame(columns=["cas", "pozice", "frekvence"])
-            df_header.to_csv(cesta, index=False, header=False)
+            df_header = pd.DataFrame(columns=["cas", "pozice", "frekvence", "teplota"])
+            df_header.to_csv(cesta_csv, index=False, header=False)
                   
             #cekani na vychozi pozici kalibrace
             #zajede na pozici a ceka na dalsi ukoly
@@ -127,14 +131,13 @@ class KalibraceController():
                         print(f"[{self.__class__.__name__}] HOMED!")
                         self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000") #pozice - max v Y
                         time.sleep(5) #CAS NEZ DOJEDE NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000")
-                        self.controller.M_C_nastav_referenci()
+                        self.controller.M_C_nastav_referenci() #jakmile stoji, tak se zreferuje pozice
                         break
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] chyba ({e})")
             #smycka pro sber dat a zapis do souboru 
             #doresit - vymenit while za for - a pocitat do max vzdalenosti -- inkrementace piezo dle vzdalenosti
             #zapisovani do souboru vzdalenost - pozice cteni + frekvence X dat,... cas..
-            #casova narocnost posunuti pieza urcit ze zrychleni, rychlosti a vzdalenosti posunu - promenny time.sleep(x) 
             #myslet na propojeni s promennymi - mozna do frony pro vykreslovani do grafu v realtime
             #ulozit - nacitani grafu v jinych mistech aplikace - filtrace dat
             iterace = 0
@@ -146,22 +149,27 @@ class KalibraceController():
                 if iterace > 0:
                     #zapsat mcu frekvence a piezo polohu
                     self.vzorky = self.mcu_model.frekvence_vzorky.copy()
+                    self.teplota = self.mcu_model.teplota_vzorky.copy()
                     self.poloha = (int(self.piezo_model.y_ref))*(-1)
                     cas = datetime.now().strftime("%H:%M:%S.%f")[:-3]
                 
                     df = pd.DataFrame({
                             "cas": [cas]*len(self.vzorky),
                             "pozice": [self.poloha]*len(self.vzorky),
-                            "frekvence": self.vzorky
+                            "frekvence": self.vzorky,
+                            "teplota" : self.teplota
                         })
                     
-                    df.to_csv(cesta, mode='a', header=False, index=False)
+                    df.to_csv(cesta_csv, mode='a', header=False, index=False)
                     
-                    self.queue_graf.put({
-                        "cas" : cas,
-                        "pozice" : self.poloha,
-                        "frekvence" : self.vzorky
-                    })
+                    #pridani jednotlivych polozek vzorku do fronty
+                    for f, t in zip(self.vzorky, self.teplota):
+                        self.queue_graf.put({
+                            "cas" : cas,
+                            "pozice" : self.poloha,
+                            "frekvence" : f,
+                            "teplota" : t
+                        })
                     
                     print(f"[{self.__class__.__name__}] zápis dat !") 
   
@@ -182,14 +190,42 @@ class KalibraceController():
                 
                 iterace += 1
                   
+            #precteni celeho CSV a nahrani do XLSX
+            df_csv = pd.read_csv(cesta_csv)
+            try:
+                wb = Workbook()
+                ws = wb.active
+                ws.title = "Data"
+                #hlavicka
+                hlavicka = ["Čas (hh:mm:ss)", "Pozice (µm)", "Frekvence (Hz)", "Teplota (°C)"]
+                bold_font = Font(bold=True)
+                ws.column_dimensions['A'].width = 20
+                ws.column_dimensions['B'].width = 15
+                ws.column_dimensions['C'].width = 20
+                ws.column_dimensions['D'].width = 15
+                #zapsat hlavicku
+                for col_num, text in enumerate(hlavicka, start=1):
+                    cell = ws.cell(row=1, column=col_num, value=text)
+                    cell.font = bold_font
+                #zapsat data
+                for row_num, row_data in enumerate(df_csv.values, start=2):
+                    for col_num, value in enumerate(row_data, start=1):
+                        ws.cell(row=row_num, column=col_num, value=value)
+                #ulozit
+                wb.save(cesta_xlsx)
+                print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY")     
+            except Exception as e:
+                InfoMsg = f"CHYBA\nEXCEL VZORKY NEVYTVORENY --CHYBA\n {e}!!"
+                messagebox.showinfo("Chyba", InfoMsg)
+                print(f"[{self.__class__.__name__}] EXCEL VZORKY NEVYTVORENY --CHYBA!! {e}")   
+                  
             print(f"[{self.__class__.__name__}] sběr dat hotový")  
-                
-                
-
-                
-                
+            self.kalibrace = False #konec kalibrace
+            self.mcu_model.lock_frekvence = True #zase odemknout pro pripad dalsiho mereni
             
-        
+            
+                
+                
         self.t1 = threading.Thread(target=kalibrace_start_inner, daemon=True)
         self.t1.start()
         

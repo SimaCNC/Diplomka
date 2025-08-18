@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from tkinter import messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-
+import numpy as np
 if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
@@ -57,7 +57,7 @@ class RootGUI():
             print(f"[frame] Frame '{name}' NEEXISTUJE")
         
     def window_exit(self):
-        # zavrit = messagebox.askyesno("Ukončení aplikace", "Upravdu si přejete ukončit aplikaci?")
+        # zavrit = messagebox.askyesno("Ukončení aplikace", "Přejete si ukončit aplikaci?")
         # if zavrit:
         #     print("Zavirani okna a vypnuti aplikace")
         #     self.root.destroy()
@@ -516,8 +516,8 @@ class Typ_protokolGUI(LabelFrame):
                     #"2" : "Pulzy",
                     #"3" : "Protokol"}
         self.RB_AD = Radiobutton(self, text="A/D převodník: 0...3,3V", variable=self.vybrane_var, value="1",bg="white" ,command=lambda : self.controller.kalibrace.protokol_kalibrace(self.vybrane_var.get()), width=20, anchor="w")
-        self.RB_pulzy = Radiobutton(self, text="Pulzy: 0...250kHz", variable=self.vybrane_var, value="2",bg="white" ,command=lambda : self.controller.kalibrace.protokol_kalibrace(self.vybrane_var.get()), width=20, anchor="w")
-        self.RB_protokol = Radiobutton(self, text="Protokol (viz. nápověda)", variable=self.vybrane_var, value="3",bg="white" ,command=lambda : self.controller.kalibrace.protokol_kalibrace(self.vybrane_var.get()), width=20, anchor="w")   
+        self.RB_pulzy = Radiobutton(self, text="Pulzy: 0...1MHz", variable=self.vybrane_var, value="2",bg="white" ,command=lambda : self.controller.kalibrace.protokol_kalibrace(self.vybrane_var.get()), width=20, anchor="w")
+        self.RB_protokol = Radiobutton(self, text="Protokol", variable=self.vybrane_var, value="3",bg="white" ,command=lambda : self.controller.kalibrace.protokol_kalibrace(self.vybrane_var.get()), width=20, anchor="w")   
             
         self.publish()
         
@@ -574,16 +574,24 @@ class KalibraceGUI(LabelFrame):
         self.BTN_pocet_vzorku = Button(self, text="Potvrdit", width=18, command= lambda: self.controller.kalibrace.nastavit_vzorky(self.entry_pocet_vzorku.get()))
         self.controller.kalibrace.nastavit_vzorky(self.entry_pocet_vzorku.get())
         
-        self.label_regulace = Label(self, text="Regulace teploty :", bg="white", width=20, anchor="w")
-        self.regulace_var = StringVar(self, value="0")
-        self.RB_regulace_teplota0 = Radiobutton(self, text="Bez regulace", variable=self.regulace_var, value="0", bg="white", command=None, width=20, anchor="w")
-        self.RB_regulace_teplota1 = Radiobutton(self, text="Regulace teploty", variable=self.regulace_var, value="1", bg="white", command=None, width=20, anchor="w")
+        # self.zaznam_teplota = Label(self, text="Záznam teploty :", bg="white", width=20, anchor="w")
+        # self.regulace_var = StringVar(self, value="0")
+        # self.RB_teplota0 = Radiobutton(self, text="Bez teploty", variable=self.regulace_var, value="0", bg="white", command=None, width=20, anchor="w")
+        # self.RB_teplota1 = Radiobutton(self, text="Záznam teploty", variable=self.regulace_var, value="1", bg="white", command=None, width=20, anchor="w")
         
         # self.label_odhad_cas = Label(self, text="Odhadovaný čas kalibrace :", bg="white", width=20, anchor="w")
         self.label_kalibraceStart = Label(self, text="Start kalibrace :", bg="white", width=20, anchor="e")
-        self.BTN_kalibraceStart = Button(self, text="START", width=18, state="active", command= self.okno_kalibrace)
+        self.BTN_kalibraceStart = Button(self, text="START", width=18, state="active", command= self.BTN_kalibraceStart_nastavit)
+        
+        
         
         self.publish()
+        
+    def BTN_kalibraceStart_nastavit(self):
+            self.controller.kalibrace.nastavit_delku_kroku(self.entry_krok.get())
+            self.controller.kalibrace.nastavit_delku_vzdalenost(self.entry_vzdalenost.get())
+            self.controller.kalibrace.nastavit_vzorky(self.entry_pocet_vzorku.get())
+            self.okno_kalibrace()
         
     def publish(self):
         self.label_slozka.grid(row=0, column=0, padx=5, pady=5)
@@ -606,9 +614,9 @@ class KalibraceGUI(LabelFrame):
         self.entry_pocet_vzorku.grid(row=4, column=1, padx=5, pady=5, sticky="w")
         self.BTN_pocet_vzorku.grid(row=4, column=2, padx=5, pady=5, sticky="w")  
     
-        self.label_regulace.grid(row=5, column=0, padx=5, pady=5)
-        self.RB_regulace_teplota0.grid(row=5, column=1, padx=5, pady=5, sticky="w")
-        self.RB_regulace_teplota1.grid(row=5, column=2, padx=5, pady=5, sticky="w")
+        # self.zaznam_teplota.grid(row=5, column=0, padx=5, pady=5)
+        # self.RB_teplota0.grid(row=5, column=1, padx=5, pady=5, sticky="w")
+        # self.RB_teplota1.grid(row=5, column=2, padx=5, pady=5, sticky="w")
         # self.label_odhad_cas.grid(row=4, column=0, padx=5, pady=5)
         
         self.label_kalibraceStart.grid(row=6, column=1, padx=5, pady=5, sticky="e")
@@ -646,20 +654,31 @@ class KalibracniOkno(Toplevel):
         self.kalibrace_gui : KalibraceGUI = kalibrace_gui
         self.controller = controller
         self.title("Probíhá kalibrace")
-        self.geometry("500x500")
+        self.geometry("800x800")
         self.config(bg="white")
         self.iconbitmap('icon/logo_uprava2.ico')
         
-        self.scroll_frame = ScrollableFrame(self)
-        self.scroll_frame.pack(fill="both", expand=True)
+        # self.scroll_frame = ScrollableFrame(self)
+        # self.scroll_frame.pack(fill="both", expand=True)
         
-        self.frame = self.scroll_frame.scrollable_frame
+        # #toto je FRAME hlavni
+        # self.frame = self.scroll_frame.scrollable_frame
+        
         self.protocol("WM_DELETE_WINDOW", self.window_exit)
         
-        #vyber metody kalibrace
-        if self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+        #VYBER METODY KALIBRACE
+        if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+            print(f"[{self.__class__.__name__}] TATO VOLBA NEEXISTUJE, NONE")
+            pass
+        
+        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
             self.controller.kalibrace.kalibrace_start_pulzy_dopredna()
             self.controller.blok_widgets(self.controller.root)
+            
+        elif self.controller.protokol_gui.vybrane_var.get() == "3" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+            print(f"[{self.__class__.__name__}] TATO VOLBA NEEXISTUJE, NONE")
+            pass
+        
         else:
             print("Špatně vybraná konfigurace !!")
             self.window_exit()
@@ -667,8 +686,76 @@ class KalibracniOkno(Toplevel):
         self.data_casy = []
         self.data_pozice = []
         self.data_vzorky = []
+        self.data_teplota = []    
+                     
+        self.frame_graf = Frame(self, bg="white")
+        self.frame_graf.grid(row=0, column=0, padx=5, pady=5, sticky="NSEW")
         
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače")
+        self.ax.set_xlabel("Vzdálenost (μm)")
+        
+        if self.controller.protokol_gui.vybrane_var.get() == "2":
+            print(f"[{self.__class__.__name__}] vybraná frekvence")
+            self.ax.set_ylabel("Frekvence (Hz)")
+        
+        #canvas pro vlozeni matplotlib do tkinter okna
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_graf)
+        self.widget = self.canvas.get_tk_widget()
+        self.widget.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        
+        #spusteni smycky pro aktualizaci grafu
+        if self.controller.protokol_gui.vybrane_var.get() == "2":
+            self.after(500, self.aktualizace_graf_frekvence)
+        
+        self.ax.clear()
+        self.ax.minorticks_on()
+        self.ax.grid(which='major', linestyle='--', linewidth=0.7, alpha=0.8)
+        self.ax.grid(which='minor', linestyle='-', linewidth=0.3, alpha=0.4)
+        
+        #GRAF PRO FREKVENCI: if self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+    def aktualizace_graf_frekvence(self):
+        #zpracovavani dat ve fronte
+        print(f"[{self.__class__.__name__}] AKTUALIZACE GRAFU")
+        while not self.controller.kalibrace.queue_graf.empty():
+            zaznam = self.controller.kalibrace.queue_graf.get()
+            
+            pozice = zaznam["pozice"]
+            frekvence = zaznam["frekvence"]
+            
+            print(f"[{self.__class__.__name__}] {pozice} {frekvence}")
+            
+            self.data_pozice.append(int(pozice))
+            self.data_vzorky.append(int(frekvence))
+            
+        # vyčistit předchozí graf
+        self.ax.clear()
+        self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače")
+        self.ax.set_xlabel("Vzdálenost (μm)")
+        self.ax.set_ylabel("Frekvence (Hz)")
+        self.ax.minorticks_on()
+        self.ax.grid(which='major', linestyle='--', linewidth=0.7, alpha=0.8)
+        self.ax.grid(which='minor', linestyle='--', linewidth=0.3, alpha=0.4)
+
+        try:
+            self.ax.plot(self.data_pozice, self.data_vzorky, 'o', markersize=5, color='red')
+        except Exception as e:
+            print(f"[{self.__class__.__name__}] CHYBA: {e}")
+
+        self.ax.relim()
+        self.ax.autoscale_view()
+        self.fig.tight_layout()  # zajistí správné layoutování popisků
+        self.canvas.draw_idle()
+        print(f"[{self.__class__.__name__}] Počet bodů v grafu: {len(self.data_pozice)}")
+        
+        if self.controller.kalibrace.kalibrace == True:
+            self.after(500, self.aktualizace_graf_frekvence)
+            
 
     def window_exit(self):
         # zavrit = messagebox.askyesno("Ukončení aplikace", "Upravdu si přejete ukončit aplikaci?")
@@ -678,3 +765,7 @@ class KalibracniOkno(Toplevel):
         self.kalibrace_gui.BTN_kalibraceStart.config(state="active")
         self.destroy()
         print(f"[{self.__class__.__name__}] Zavirani okna")
+        self.data_casy.clear()
+        self.data_pozice.clear()
+        self.data_vzorky.clear()
+        self.data_teplota.clear()

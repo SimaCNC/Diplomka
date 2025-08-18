@@ -179,8 +179,12 @@ class MainController():
         self.piezo_gui.label_pozice_referenceY_piezo.config(text=f"Yr: {self.piezo_model.y_ref:.3f}")
         self.piezo_gui.label_pozice_referenceZ_piezo.config(text=f"Zr: {self.piezo_model.z_ref:.3f}")
         
-        self.M_C_enable_piezo_buttons()
-        self.lock_pohyb = True
+        if self.kalibrace.kalibrace == True:
+            self.lock_pohyb = True
+        else:
+            self.M_C_enable_piezo_buttons()
+            self.lock_pohyb = True
+        
                                     
     def M_C_nastav_referenci(self):
         print("[NASTAVENI REFERENCE]")
