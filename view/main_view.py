@@ -108,7 +108,8 @@ class ScrollableFrame(Frame):
 
 #-------------------------------------------------------------------------        
 #PRVNI OKNO APLIKACE (main) - PRIPOJENI A OVLADANI SUBSYSTEMU PIEZA A MCU
-#SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY    
+#SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY 
+#OVLADANI PRO UMISTENI SENZORU   
 #------------------------------------------------------------------------- 
 
 class MainPage(ScrollableFrame):
@@ -272,6 +273,9 @@ class PiezoGUI(LabelFrame):
         rychlosti = ["10", "100", "500", "1000", "2000", "3000", "4000", "5000", "6000", "8000"]
         self.vybrana_rychlost_piezo.set(rychlosti[6])
         self.drop_rychlost_piezo = OptionMenu(self.frame_piezo_ovladani_leve, self.vybrana_rychlost_piezo, *rychlosti, command=self.piezo_model.nastav_rychlost)
+        self.label_kalibracni_poloha_piezo = Label(self.frame_piezo_ovladani_leve, text="Nastavit kalibrační polohu", width=25, bg="white", anchor="w")
+        self.BTN_kalibracni_poloha_piezo = Button(self.frame_piezo_ovladani_leve, text="MAX Y+", width=10, command=self.controller.M_C_kalibracni_poloha_piezo)
+        
         
         #ovladani - pohyb
         self.label_piezo_pohyb = Label(self.frame_piezo_ovladani_prave, text="Nastavit velikost pohybu v μm:", bg="white", width=25, anchor="w")
@@ -279,6 +283,7 @@ class PiezoGUI(LabelFrame):
         self.entry_piezo_pohyb.bind("<Return>", lambda _ : self.controller.M_C_nastav_pohyb_piezo(self.entry_piezo_pohyb.get()))
         self.label_piezo_pohyb_nastavene = Label(self.frame_piezo_ovladani_prave, text="Nastavená velikost pohybu v μm:", bg="white", width=25, anchor="w")
         self.label_piezo_pohyb_nastavene_text = Label(self.frame_piezo_ovladani_prave, text=self.piezo_model.velikost_pohybu, bg="white", width=5, anchor="w")
+        
         self.frame_piezo_pohyb = Frame(self.frame_piezo_ovladani_prave, padx=5, pady=5, bg="white")
         self.BTN_piezo_pohyb_xP = Button(self.frame_piezo_pohyb, text="X+", width=5, command=lambda: self.controller.M_C_pohyb_piezo("x"))
         self.BTN_piezo_pohyb_xM = Button(self.frame_piezo_pohyb, text="X-", width=5, command=lambda: self.controller.M_C_pohyb_piezo("x-"))
@@ -286,6 +291,7 @@ class PiezoGUI(LabelFrame):
         self.BTN_piezo_pohyb_yM = Button(self.frame_piezo_pohyb, text="Y-", width=5, command=lambda: self.controller.M_C_pohyb_piezo("y-"))
         self.BTN_piezo_pohyb_zP = Button(self.frame_piezo_pohyb, text="Z+", width=5, command=lambda: self.controller.M_C_pohyb_piezo("z"))
         self.BTN_piezo_pohyb_zM = Button(self.frame_piezo_pohyb, text="Z-", width=5, command=lambda: self.controller.M_C_pohyb_piezo("z-"))
+        
         
         #pozice
         self.frame_piezo_pozice = LabelFrame(self,text="Pozice", padx=5, pady=5, bg="white")
@@ -320,12 +326,16 @@ class PiezoGUI(LabelFrame):
         self.label_rychlost_piezo.grid(row=3, column=0, padx=5, pady=5, sticky="NW")
         self.drop_rychlost_piezo.grid(row=3, column=1, padx=5, pady=5, sticky="NW")
         self.drop_rychlost_piezo.config(width=6, padx=5, pady=5)
+        self.label_kalibracni_poloha_piezo.grid(row=4, column=0, padx=5, pady=5, sticky="NW")
+        self.BTN_kalibracni_poloha_piezo.grid(row=4, column=1, padx=5, pady=5, sticky="NW")
         
         #ovladani - pohyb
         self.label_piezo_pohyb.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
         self.entry_piezo_pohyb.grid(row=0, column=1, padx=5, pady=5, sticky="NW")
         self.label_piezo_pohyb_nastavene.grid(row=1, column=0, padx=5, pady=5, sticky="NW")
         self.label_piezo_pohyb_nastavene_text.grid(row=1, column=1, padx=5, pady=5, sticky="NW")
+        
+        
         self.frame_piezo_pohyb.grid(row=2, column=0, sticky="NW")
         self.BTN_piezo_pohyb_xP.grid(row=0, column=0, padx=5, pady=5, sticky="NW")
         self.BTN_piezo_pohyb_xM.grid(row=1, column=0, padx=5, pady=5, sticky="NW")
@@ -333,6 +343,7 @@ class PiezoGUI(LabelFrame):
         self.BTN_piezo_pohyb_yM.grid(row=1, column=1, padx=5, pady=5, sticky="NW")
         self.BTN_piezo_pohyb_zP.grid(row=0, column=2, padx=5, pady=5, sticky="NW")
         self.BTN_piezo_pohyb_zM.grid(row=1, column=2, padx=5, pady=5, sticky="NW")
+       
         
         #pozice
         self.frame_piezo_pozice.grid(row=1, column=0, padx=5, pady=10, sticky="NW")
@@ -408,12 +419,12 @@ class McuGUI(LabelFrame):
         self.frame_mcu_prikaz.grid(row=0, column=0, padx=5, pady=5, sticky="NW") 
         
         self.label_mcu_odeslat = Label(self.frame_mcu_prikaz, text="Zpráva k odeslání: ", bg="white", width=15, anchor="w")
-        self.entry_mcu_prikaz = Entry(self.frame_mcu_prikaz, width=33)
+        self.entry_mcu_prikaz = Entry(self.frame_mcu_prikaz, width=40)
         self.entry_mcu_prikaz.bind("<Return>", lambda _ : self.controller.M_C_send_msg_MCU(self.entry_mcu_prikaz.get()))
         self.BTN_mcu_prikaz = Button(self.frame_mcu_prikaz, text="POSLAT", width=10, command= lambda: self.controller.M_C_send_msg_MCU(self.entry_mcu_prikaz.get()))
         
         self.label_mcu_odpoved = Label(self.frame_mcu_prikaz, text="Odpověď MCU:", bg="white", width=20, anchor="w")
-        self.text_MCU_odpoved = Text(self.frame_mcu_prikaz, width=25, height=1)
+        self.text_MCU_odpoved = Text(self.frame_mcu_prikaz, width=30, height=1)
         self.BTN_mcu_odpoved = Button(self.frame_mcu_prikaz, text="REFRESH", width=10, command= self.controller.M_C_odpoved_MCU_refresh)
         
         self.publish_gui_MCU()

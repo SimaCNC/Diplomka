@@ -106,6 +106,7 @@ class KalibraceController():
     def kalibrace_start_pulzy_dopredna(self):
         print(f"[{self.__class__.__name__}] kalibrace_start_pulzy !!")
         self.controller.M_C_Index()
+        self.controller.blok_widgets() #zablokovani widgetu - M_C_Index neco odblokuje
         
         if self.pracovni_slozka is not None:
             cesta_csv = os.path.join(self.pracovni_slozka, f"temp.csv")

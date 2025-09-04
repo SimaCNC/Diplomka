@@ -226,9 +226,27 @@ class MainController():
         self.piezo_model.nastav_pohyb_piezo(pohyb=pohyb)
         self.piezo_gui.label_piezo_pohyb_nastavene_text.config(text=self.piezo_model.velikost_pohybu)
 
+    def M_C_kalibracni_poloha_piezo(self):
+        self.lock_pohyb = False
+        self.M_C_disable_piezo_buttons()
+        InfoMsg = "Prostor před piezopohony musí být volný jinak dojde ke kolizi s objektem!\n\nJe prostor před piezopohony volný?"
+        povoleni = messagebox.askquestion("PROSTOR", InfoMsg)
+        
+        if povoleni == "yes":
+            self.piezo_model.pohyb_piezo_GT(0, 10000, 0)
+            
+            def callback_po_odpovedi_piezo():
+                self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu) #aktualni pozice po zastaveni
+            self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
+            
+        else:
+            self.M_C_enable_piezo_buttons()
+
+
     def M_C_pohyb_piezo(self, smer):
         self.lock_pohyb = False
         self.M_C_disable_piezo_buttons()
+        
         self.piezo_model.pohyb_piezo(smer)
         
         def callback_po_odpovedi_piezo():
