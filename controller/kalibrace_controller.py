@@ -14,6 +14,7 @@ from openpyxl.utils import get_column_letter
 import matplotlib.pyplot as plt
 from view.main_view import MainPage, KalibracePage
 from datetime import datetime
+import math
 
 from typing import TYPE_CHECKING
 
@@ -62,19 +63,29 @@ class KalibraceController():
         print(f"[KalibraceController] vybrany protokol : {self.protokol[protokol]}")
         # print(f"[{self.__class__.__name__}] protokol: {self.controller.protokol_gui.vybrane_var.get()}") #stejna odpoved
         
-    def nastavit_delku_kroku(self, krok):       
-        self.delka_kroku = krok
-        print(f"[{self.__class__.__name__}] delka kroku je {self.delka_kroku} (um)")
+    def nastavit_delku_kroku(self, krok):     
+        try:
+            self.delka_kroku = round(float(krok), 3)  
+            print(f"[{self.__class__.__name__}] delka kroku je {self.delka_kroku} (um)")
+        except ValueError:
+            print("neplatne cislo!")
         
     def nastavit_delku_vzdalenost(self, vzdalenost):
-        if int(vzdalenost) > 20000:
-            print(f"[{self.__class__.__name__}] CHYBA!! : nastavená počet vzorků převyšuje číslo 20000 !!")
+        try:
+            hodnota = float(vzdalenost) #prevod na cislo
+        except ValueError:
+            print(f"[{self.__class__.__name__}] CHYBA!! NEPLATNY VSTUP ({vzdalenost})")
+            return
+    
+        hodnota = round(hodnota, 3)
+        self.merena_vzdalenost = hodnota
+
+        if hasattr(self, "entry_vzdalenost"):
             self.controller.kalibrace_gui.entry_vzdalenost.delete(0, 'end')
-            self.controller.kalibrace_gui.entry_vzdalenost.insert(0, "20000")
-            self.merena_vzdalenost = 20000
-        else:
-            self.merena_vzdalenost = vzdalenost
-            print(f"[{self.__class__.__name__}] merena vzdalenost je {self.merena_vzdalenost} (um)")
+            self.controller.kalibrace_gui.entry_vzdalenost.insert(0, f"{hodnota:.3f}")
+
+        print(f"[{self.__class__.__name__}] merena vzdalenost je {self.merena_vzdalenost:.3f} (µm)")
+        
       
     def vybrat_pracovni_slozku(self):
         self.pracovni_slozka = filedialog.askdirectory(title="Pracovní složka")
@@ -106,7 +117,7 @@ class KalibraceController():
     def kalibrace_start_pulzy_dopredna(self):
         print(f"[{self.__class__.__name__}] kalibrace_start_pulzy !!")
         self.controller.M_C_Index()
-        self.controller.blok_widgets() #zablokovani widgetu - M_C_Index neco odblokuje
+        self.controller.blok_widgets(self.controller.root) #zablokovani widgetu - M_C_Index neco odblokuje
         
         if self.pracovni_slozka is not None:
             cesta_csv = os.path.join(self.pracovni_slozka, f"temp.csv")
@@ -118,7 +129,7 @@ class KalibraceController():
             self.kalibrace = True #start kalibrace
             time.sleep(5) #delay kvuli index pozici
             print(f"[{self.__class__.__name__}] VLAKNO KALIBRACE!")
-            self.pocet_kroku = int(self.merena_vzdalenost) / int(self.delka_kroku)
+            self.pocet_kroku = math.floor(self.merena_vzdalenost / self.delka_kroku)
             #zacatek vytvoreni docasneho souboru a zapis do nej
             df_header = pd.DataFrame(columns=["cas", "pozice", "frekvence", "teplota"])
             df_header.to_csv(cesta_csv, index=False, header=False)
@@ -144,6 +155,10 @@ class KalibraceController():
             iterace = 0
             for _ in range(int(self.pocet_kroku) + 2):
                 
+                #pokud je kalibrace nekde ukoncena, tak preruseni iteraci
+                if self.kalibrace == False:
+                    break
+                
                 while self.mcu_model.lock_frekvence == False:
                     time.sleep(0.1) 
                     
@@ -151,12 +166,12 @@ class KalibraceController():
                     #zapsat mcu frekvence a piezo polohu
                     self.vzorky = self.mcu_model.frekvence_vzorky.copy()
                     self.teplota = self.mcu_model.teplota_vzorky.copy()
-                    self.poloha = (int(self.piezo_model.y_ref))*(-1)
+                    self.poloha = round(float(self.piezo_model.y_ref) * -1, 3)
                     cas = datetime.now().strftime("%H:%M:%S.%f")[:-3]
                 
                     df = pd.DataFrame({
                             "cas": [cas]*len(self.vzorky),
-                            "pozice": [self.poloha]*len(self.vzorky),
+                            "pozice": [f"{self.poloha:.3f}"]*len(self.vzorky),
                             "frekvence": self.vzorky,
                             "teplota" : self.teplota
                         })
@@ -175,7 +190,7 @@ class KalibraceController():
                     print(f"[{self.__class__.__name__}] zápis dat !") 
   
                     if iterace < int(self.pocet_kroku) + 1:    
-                        self.controller.M_C_nastav_pohyb_piezo(int(self.delka_kroku))
+                        self.controller.M_C_nastav_pohyb_piezo(float(self.delka_kroku))
                         self.controller.M_C_pohyb_piezo("y-")
                         while not self.controller.lock_pohyb:
                             time.sleep(0.1)               
@@ -185,7 +200,7 @@ class KalibraceController():
                 self.mcu_model.lock_frekvence = False
                 
                 if iterace < int(self.pocet_kroku) + 1:
-                    print(iterace)
+                    print(f"{self.__class__.__name__} iterace")
                     print(f"[{self.__class__.__name__}] CTENI FREKVENCE !!")
                     self.mcu_model.precist_frekvenci(int(self.pocet_zaznamu))
                 

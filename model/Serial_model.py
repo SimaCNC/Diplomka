@@ -79,6 +79,16 @@ class SerialCtrl():
                 time.sleep(0.0001)
                 msg_received = self.ser.readline().decode().strip()
                 print(f"[stream] Prijato: {msg_received}, ocekavane {expect_regex}")
+                
+                #POKUD PRIJDE HLASKA S CHYBOU err. 9
+                if msg_received.startswith("$RS"):
+                #cisla po x y z
+                    match = re.search(r"x(\d+)\s+y(\d+)\s+z(\d+)", msg_received)
+                    if match:
+                        x_val, y_val, z_val = match.groups()
+                        if "9" in (x_val, y_val, z_val):
+                            print(f"{self.__class__.__name__} CHYBA 9 !!! PIEZOPOHONY! NUTNO VYPNOUT A ZAPNOUT PIEZOPOHONY")
+                            
                 if re.match(expect_regex, msg_received):                   
                     if callback_fun:
                         callback_fun(msg_received)

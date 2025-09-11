@@ -4,7 +4,7 @@ M - funkce spravovane v controlleru od modelu
 
 C - command pro piezopohony (funkce ma vysokou spojitost s piezopohony)
 
-
+O - "origo" -originalni hodnota ktera byla funkcni nebo puvodni a ted je zmenena z urciteho duvodu
 
 cisla u popisku v controlleru odpovidaji cca strane kde se spojitost vyskytuje
 
@@ -32,6 +32,10 @@ excel start - vytvoreni excelu s zadanymi prvky v python skriptu
 - u A/D snimani pridat zapojeni s operacnimi zesilovaci pro 3,3V, 5V, 10V vstupy - prepinani prepinacem,
 LED pro indikaci jaky je zvolen OP zesilovac pro upravu signalu ze snimace -> PCB +12V napajeni a rozdeleni na 10V, 5V, 3,3V,
 OP zesilovac v zapojeni..
+-nejaka relatka pripojena k GPIO napriklad pro ovladani veci v budoucnu
+-sirenka 5V
+-ledky 5V
+-debug konektory
 
 -JAK JSEM PCB VYTVORIL -schema navrh ,deska - kiCAD,frezovani - flatCAM,zarovnani protoze nerovna deska cuprextitova - Autoleveller, pouziti frezky s - LinuxCNC,... material, proces vyroby blokove schema pochodu pouzitych SW
 # udelat statickou charakteristiku A/D prevodniku pro OP zapojeni
@@ -61,7 +65,7 @@ napr. pro nalezeni polohy, v aplikaci napriklad udelat tlacitko start stream pro
 -kapacitni  -- oscilator
 -tenzometr  -- mustek
 -IR snimac  -- delic
-            -- amplitudove spektrum
+            -- .............amplitudove spektrum
 
 
 **WORD diplomka**
