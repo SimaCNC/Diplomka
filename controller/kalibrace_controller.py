@@ -127,14 +127,50 @@ class KalibraceController():
         if self.pracovni_slozka is not None:
             cesta_csv = os.path.join(self.pracovni_slozka, f"temp.csv")
             cesta_xlsx = os.path.join(self.pracovni_slozka, f"temp.xlsx")
-        
-        
+    
         #SMYCKA VLAKNO
         def kalibrace_start_inner():
             self.kalibrace = True #start kalibrace
+            print(f"[{self.__class__.__name__}] VLAKNO KALIBRACE!")
             
+            self.pocet_kroku = math.floor(self.merena_vzdalenost / self.delka_kroku)
+            
+            #zacatek vytvoreni docasneho souboru a zapis do nej
+            df_header = pd.DataFrame(columns=["cas", "pozice", "napeti", "teplota", "tlak", "vlhkost"])
+            df_header.to_csv(cesta_csv, index=False, header=False)
+            
+            #cekani na najeti do referencni polohy zadane uzivatelem
+            #zajede na pozici a ceka na dalsi ukoly
+            while True:
+                time.sleep(0.5)
+                try:
+                    if self.piezo_model.is_homed == True:
+                        print(f"[{self.__class__.__name__}] HOME jiz provedeno NAJIZDENI DO REFERENCNI POLOHY !")
+                        
+                        #NAJETI ZPET DO REFERENCNI POLOHY
+                        pohyb_x = self.piezo_model.x - self.piezo_model.x_ref
+                        pohyb_y = self.piezo_model.y - self.piezo_model.y_ref
+                        pohyb_z = self.piezo_model.z - self.piezo_model.z_ref
+                        self.controller.M_C_send_msg_piezo(f"GT x{pohyb_x:.3f} y{pohyb_y:.3f} z{pohyb_z:.3f}")
+                        #prodleva nez najede na pozici pro 
+                        time.sleep(5)
+                        break
+                except Exception as e:
+                    print(f"[{self.__class__.__name__}] CHYBA ({e})")
+            #smycka pro sber dat a zapis do souboru 
+            #doresit - vymenit while za for - a pocitat do max vzdalenosti -- inkrementace piezo dle vzdalenosti
+            
+        iterace = 0
+            
+        
         self.t1 = threading.Thread(target=kalibrace_start_inner, daemon=True)
         self.t1.start()
+    
+    
+    
+    
+    
+    
     
     #SMYCKA VLAKNO FUNKCE kalibrace s PULZY DOPREDNA         
     def kalibrace_start_pulzy_dopredna(self):
@@ -171,17 +207,14 @@ class KalibraceController():
                         time.sleep(0.5)
                         break
                 except Exception as e:
-                    print(f"[{self.__class__.__name__}] chyba ({e})")
+                    print(f"[{self.__class__.__name__}] CHYBA ({e})")
             #smycka pro sber dat a zapis do souboru 
             #doresit - vymenit while za for - a pocitat do max vzdalenosti -- inkrementace piezo dle vzdalenosti
-            #zapisovani do souboru vzdalenost - pozice cteni + frekvence X dat,... cas..
-            #myslet na propojeni s promennymi - mozna do frony pro vykreslovani do grafu v realtime
-            #ulozit - nacitani grafu v jinych mistech aplikace - filtrace dat
             iterace = 0
             for _ in range(int(self.pocet_kroku) + 2):
                 
                 #pokud je kalibrace nekde ukoncena, tak preruseni iteraci
-                if self.controller.piezo_model.prostor == False:
+                if self.controller.piezo_model.prostor == False or self.kalibrace == False:
                     break
                 
                 while self.mcu_model.lock_frekvence == False:
@@ -289,7 +322,7 @@ class KalibraceController():
                 print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY, EXCEL (temp soubor) VYTVOREN")     
             except Exception as e:
                 self.kalibrace = False
-                InfoMsg = f"CHYBA\nEXCEL (temp soubor) VZORKY NEVYTVORENY --CHYBA\npravdepodobne otevreny soubor temp:\n{e}!!"
+                InfoMsg = f"CHYBA\nEXCEL (temp soubor) VZORKY NEVYTVORENY KONEC APLIKACE !!CHYBA!!\npravdepodobne otevreny soubor temp:\n{e}!!"
                 messagebox.showinfo("Chyba", InfoMsg)
                 print(f"[{self.__class__.__name__}] EXCEL VZORKY NEVYTVORENY --CHYBA!! {e}")   
                   

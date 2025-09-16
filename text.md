@@ -59,7 +59,8 @@ OP zesilovac v zapojeni..
 -dodelat stream hodnot pro zachyceni informaci pro umisteni senzoru - pouze pro debugging skrz nejaky monitor,
 napr. pro nalezeni polohy, v aplikaci napriklad udelat tlacitko start stream pro poslani prikazu a nasledny stream hodnot z mcu, pro nalezeni vhoodne polohy umisteni pieza (-tl. max pozice v Y piezo) 
 - stream pulzy, stream AD --- pro stream a zisk dat udelany kruhovy buffer datova struktura..?
-
+- obvod s casovacem pro LED blink.
+- LEDky ovladat samostatnym prikazem
 
 **SENZOR**
 -kapacitni  -- oscilator
