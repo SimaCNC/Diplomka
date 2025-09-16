@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 import threading
 import re
+import inspect
 
 if TYPE_CHECKING:
     from model.Serial_model import SerialCtrl
@@ -8,11 +9,12 @@ if TYPE_CHECKING:
 class Piezo_model():
     def __init__(self, piezo_serial : 'SerialCtrl'):
         self.piezo_serial = piezo_serial
+        self.prostor = False
         
         self.x = None
         self.y = None
         self.z = None
-        self.is_homed = None
+        self.is_homed = False
         
         self.x_old = 0
         self.y_old = 0
@@ -107,6 +109,38 @@ class Piezo_model():
         self.velikost_pohybu = pohyb 
         
     def pohyb_piezo(self, smer):
+        
+        #KONTROLA PREKROCENI VZDALENOSTI
+        if smer == "x":
+            if self.x + self.velikost_pohybu > 10.0:
+                print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI X!!")
+                return
+            
+        elif smer == "x-":
+            if self.x - self.velikost_pohybu < -10.0:
+                print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI X-!!")
+                return
+            
+        elif smer == "y":
+            if self.y + self.velikost_pohybu > 10.0:
+                print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI Y!!")
+                return
+            
+        elif smer == "y-":
+            if self.y - self.velikost_pohybu < -10.0:
+                print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI Y-!!")
+                return
+            
+        elif smer == "z":
+            if self.z + self.velikost_pohybu > 10.0:
+                print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI Z!!")
+                return
+            
+        elif smer == "z-":
+            if self.z - self.velikost_pohybu < -10.0:
+                print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI Z-!!")
+                return
+        
         posun = f"MR {smer}{self.velikost_pohybu};\n"
         self.piezo_serial.send_msg_simple(posun)
 

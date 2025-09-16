@@ -70,6 +70,7 @@ napr. pro nalezeni polohy, v aplikaci napriklad udelat tlacitko start stream pro
 
 **WORD diplomka**
 -UPRVIT SCHEMATA
+-upravit text? odstranit mista s dopredu znamym kapacitnim snimacem
 
 
 **STATISTIKA**

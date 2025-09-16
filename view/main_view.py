@@ -5,6 +5,7 @@ from tkinter import messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
+import inspect
 if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
@@ -90,9 +91,9 @@ class ScrollableFrame(Frame):
     
         self.scrollable_frame.bind("<Configure>", self._on_frame_configure)
         # self.canvas.bind("<Configure>", self._on_canvas_configure)  
-        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-        self.canvas.bind_all("<Button-4>", lambda e: self.canvas.yview_scroll(-1, "units"))  # Linux
-        self.canvas.bind_all("<Button-5>", lambda e: self.canvas.yview_scroll(1, "units"))   # Linux 
+        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind("<Button-4>", lambda e: self.canvas.yview_scroll(-1, "units"))  # Linux
+        self.canvas.bind("<Button-5>", lambda e: self.canvas.yview_scroll(1, "units"))   # Linux 
 
     def _on_frame_configure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -102,8 +103,18 @@ class ScrollableFrame(Frame):
 
     def _on_mousewheel(self, event):
         try:
+            # if self.canvas.winfo_exists():
+            #     self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            
             if self.canvas.winfo_exists():
-                self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                first, last = self.canvas.yview()
+                delta = int(-1 * (event.delta / 120))
+
+                if (delta < 0 and first <= 0) or (delta > 0 and last >= 1):
+                    return
+
+                self.canvas.yview_scroll(delta, "units")
+            
         except TclError:
             pass  
 
@@ -274,13 +285,14 @@ class PiezoGUI(LabelFrame):
         rychlosti = ["10", "100", "500", "1000", "2000", "3000", "4000", "5000", "6000", "8000"]
         self.vybrana_rychlost_piezo.set(rychlosti[6])
         self.drop_rychlost_piezo = OptionMenu(self.frame_piezo_ovladani_leve, self.vybrana_rychlost_piezo, *rychlosti, command=self.piezo_model.nastav_rychlost)
-        self.label_kalibracni_poloha_piezo = Label(self.frame_piezo_ovladani_leve, text="Nastavit kalibrační polohu", width=25, bg="white", anchor="w")
+        self.label_kalibracni_poloha_piezo = Label(self.frame_piezo_ovladani_leve, text="Poloha MAX Y", width=25, bg="white", anchor="w")
         self.BTN_kalibracni_poloha_piezo = Button(self.frame_piezo_ovladani_leve, text="MAX Y+", width=10, command=self.controller.M_C_kalibracni_poloha_piezo)
-        
+        self.piezo_model.nastav_rychlost(4000)
         
         #ovladani - pohyb
+        validace_float = (self.controller.root.register(self.je_float), "%P") #validace dat na float
         self.label_piezo_pohyb = Label(self.frame_piezo_ovladani_prave, text="Nastavit velikost pohybu v μm:", bg="white", width=25, anchor="w")
-        self.entry_piezo_pohyb = Entry(self.frame_piezo_ovladani_prave, width=10)
+        self.entry_piezo_pohyb = Entry(self.frame_piezo_ovladani_prave, width=10,validate="key" ,validatecommand=validace_float)
         self.entry_piezo_pohyb.bind("<Return>", lambda _ : self.controller.M_C_nastav_pohyb_piezo(self.entry_piezo_pohyb.get()))
         self.label_piezo_pohyb_nastavene = Label(self.frame_piezo_ovladani_prave, text="Nastavená velikost pohybu v μm:", bg="white", width=25, anchor="w")
         self.label_piezo_pohyb_nastavene_text = Label(self.frame_piezo_ovladani_prave, text=self.piezo_model.velikost_pohybu, bg="white", width=5, anchor="w")
@@ -399,6 +411,9 @@ class PiezoGUI(LabelFrame):
         self.BTN_piezo_pohyb_zP.config(state="disabled")
         self.BTN_piezo_pohyb_zM.config(state="disabled")
         self.BTN_piezo_prikaz.config(state="disabled")
+        self.BTN_reference_piezo.config(state="disabled")
+        self.BTN_piezo_precist_polohu.config(state="disabled")
+        self.BTN_kalibracni_poloha_piezo.config(state="disabled")
         
     def enable_piezo_buttons(self):
         self.BTN_piezo_pohyb_xP.config(state="normal")
@@ -408,6 +423,18 @@ class PiezoGUI(LabelFrame):
         self.BTN_piezo_pohyb_zP.config(state="normal")
         self.BTN_piezo_pohyb_zM.config(state="normal")
         self.BTN_piezo_prikaz.config(state="normal")
+        self.BTN_reference_piezo.config(state="normal")
+        self.BTN_piezo_precist_polohu.config(state="normal")
+        self.BTN_kalibracni_poloha_piezo.config(state="normal")
+        
+    def je_float(self, vstup):
+        if vstup in (""):
+            return True
+        try:
+            float(vstup)
+            return True
+        except ValueError:
+            return False
         
 class McuGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController' ,mcu_model : 'MCU_model'):
@@ -554,7 +581,7 @@ class KalibraceGUI(LabelFrame):
         self.Entry_slozka_pracovni.config(state="readonly")
         self.BTN_slozka_pracovni = Button(self, text="SLOŽKA", width=18, state="active", command=self.controller.kalibrace.vybrat_pracovni_slozku)
         
-        self.label_strategie = Label(self, text="Strategie zpracování :", bg="white", width=20, anchor="w")
+        self.label_strategie = Label(self, text="Strategie kalibrace :", bg="white", width=20, anchor="w")
         self.label_strategie_vybrana = Label(self, text="N/A", bg ="white", width=30, anchor="w")
         self.strategie = ["-", "Dopředná", "Zpětná","Opakovatelnost", "Hystereze", "Hystereze_2" ]
         self.vybrany_drop_strategie = StringVar()
@@ -673,12 +700,14 @@ if __name__ == "__main__":
 
 
 
+
+
+
 ###------------------------------------
 ###
 ###----------KALIBRACNI OKNO-----------
 ###
 ###------------------------------------
-
 
 
 class KalibracniOkno(Toplevel):
@@ -687,7 +716,7 @@ class KalibracniOkno(Toplevel):
         self.kalibrace_gui : KalibraceGUI = kalibrace_gui
         self.controller = controller
         self.title("Probíhá kalibrace")
-        self.geometry("800x800")
+        self.geometry("1400x800")
         self.config(bg="white")
         self.iconbitmap('icon/logo_uprava2.ico')
         
@@ -708,27 +737,11 @@ class KalibracniOkno(Toplevel):
         
         self.frame_text = Frame(self, bg="white")
         self.frame_text.grid(row=0, column=2, padx=5, pady=5, sticky="NSEW")
+        self.text = Text(self.frame_text, width=80, height=30, relief="flat")
+        self.text.grid(row=0, column=0, padx=0, pady=0)
         
-        #VYBER METODY KALIBRACE
-        if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
-            print(f"[{self.__class__.__name__}] TATO VOLBA NEEXISTUJE, NONE")
-            pass
         
-        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
-            self.controller.kalibrace.kalibrace_start_pulzy_dopredna()
-            self.controller.blok_widgets(self.controller.root)
-            
-        elif self.controller.protokol_gui.vybrane_var.get() == "3" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
-            print(f"[{self.__class__.__name__}] TATO VOLBA NEEXISTUJE, NONE")
-            pass
-        
-        else:
-            print("Špatně vybraná konfigurace !!")
-            self.after(0, self.window_exit) #zavreni okna po dokonceni konstruktoru
-            
-            
-    
-        #data ze subysystemu MCU
+         #data ze subysystemu MCU
         self.data_casy = []
         self.data_pozice = []
         self.data_vzorky = []
@@ -737,30 +750,65 @@ class KalibracniOkno(Toplevel):
         self.data_tlak = []
         
         
-                     
+        #VYBER METODY KALIBRACE A JEHO SPUSTENI PRES CONTROLLER
+        #AD
+        if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
+            
+            self.controller.blok_widgets(self.controller.root)
+            if self.controller.piezo_model.prostor == False:
+                self.window_exit()
+                return
+            
         
+        elif self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+            print(f"[{self.__class__.__name__}] TATO VOLBA NEEXISTUJE, NONE")
+            pass
         
-        # self.grid_columnconfigure(0, weight=3)
-        # self.grid_columnconfigure(2, weight=1)
-        # self.grid_rowconfigure(0, weight=1)
-        
-        
+        #PULZY
+        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+            self.controller.kalibrace.kalibrace_start_pulzy_dopredna()
+            self.controller.blok_widgets(self.controller.root)
+            if self.controller.piezo_model.prostor == False:
+                self.window_exit()
+                return
+            
+        elif self.controller.protokol_gui.vybrane_var.get() == "3" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+            print(f"[{self.__class__.__name__}] TATO VOLBA NEEXISTUJE, NONE")
+            pass
+
+        else:
+            print("Špatně vybraná konfigurace kalibrace !!, neexistujici kombinace vyberu zpracovani dat a strategie kalibrace")
+            self.after(0, self.window_exit) #zavreni okna po dokonceni konstruktoru
+        #VYBER METODY KALIBRACE A JEHO SPUSTENI PRES CONTROLLER    
+            
+    
         self.fig, self.ax = plt.subplots()
         #POPISKY GRAFU
-        if self.controller.protokol_gui.vybrane_var.get() == "2":
+        if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
+            self.ax.set_title("Závislost velikosti napětí na vzdálenosti přiblíženi stěny k snímači od reference")
+            self.ax.set_xlabel("Vzdálenost (μm)")
+            self.ax.set_ylabel("Napětí (V)")
+            print(f"[{self.__class__.__name__}] vybrané napětí")
+          
+        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
             self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače")
             self.ax.set_xlabel("Vzdálenost (μm)")
-            print(f"[{self.__class__.__name__}] vybraná frekvence")
             self.ax.set_ylabel("Frekvence (Hz)")
-        
+            print(f"[{self.__class__.__name__}] vybraná frekvence")
+        #POPISKY GRAFU
+            
         #canvas pro vlozeni matplotlib do tkinter okna
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_graf)
         self.widget = self.canvas.get_tk_widget()
         self.widget.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         
         #SPUSTENI FUNKCE ZA 500ms SE FUNKCE PRO AKTUALIZACI GRAFU
-        if self.controller.protokol_gui.vybrane_var.get() == "2":
+        if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
+            self.after(500, self.aktualizace_graf_ad)
+        
+        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
             self.after(500, self.aktualizace_graf_frekvence)
+        #SPUSTENI FUNKCE ZA 500ms SE FUNKCE PRO AKTUALIZACI GRAFU
         
         self.ax.clear()
         self.ax.minorticks_on()
@@ -769,10 +817,17 @@ class KalibracniOkno(Toplevel):
         
         
         
-        #GRAF PRO FREKVENCI: if self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+       #GRAF PRO AD: if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
+    def aktualizace_graf_ad(self):
+        pass   
+        
+        
+        
+        
+        #GRAF PRO FREKVENCI: elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
     def aktualizace_graf_frekvence(self):
         #zpracovavani dat ve fronte
-        print(f"[{self.__class__.__name__}] AKTUALIZACE GRAFU")
+        print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] AKTUALIZACE GRAFU")
         while not self.controller.kalibrace.queue_graf.empty():
             zaznam = self.controller.kalibrace.queue_graf.get()
             
@@ -783,10 +838,9 @@ class KalibracniOkno(Toplevel):
             
             self.data_pozice.append(round(float(pozice), 3))
             self.data_vzorky.append(int(frekvence))
-        
-        
+                  
             
-        # vyčistit předchozí graf
+        # VYCISTIT GRAF + AKTUALIZACE
         self.ax.clear()
         self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače")
         self.ax.set_xlabel("Vzdálenost (μm)")
@@ -805,6 +859,12 @@ class KalibracniOkno(Toplevel):
         self.fig.tight_layout()  # zajistí správné layoutování popisků
         self.canvas.draw_idle()
         print(f"[{self.__class__.__name__}] Počet bodů v grafu: {len(self.data_pozice)}")
+        
+        
+        #VYCISTIT TEXT + AKTUALIZACE
+        
+        
+        
         
         if self.controller.kalibrace.kalibrace == True:
             self.after(600, self.aktualizace_graf_frekvence) #rekurzivne, cyklicky chod
@@ -828,4 +888,8 @@ class KalibracniOkno(Toplevel):
                 lst = getattr(self, attr)
                 if isinstance(lst, list):
                     lst.clear()
+                    
+                    
+                    
+    
             

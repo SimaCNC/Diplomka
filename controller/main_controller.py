@@ -6,6 +6,7 @@ import re
 from view.main_view import MainPage, KalibracePage
 from typing import TYPE_CHECKING
 from controller.kalibrace_controller import KalibraceController
+from model.Zpracovani_model import Zpracovani_model
 
 if TYPE_CHECKING:
     from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI
@@ -25,8 +26,9 @@ class MainController():
         self.main_page = None
         
 
-        
+        self.zpracovani = Zpracovani_model(controller=self)
         self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
+        
         self.lock_1 = True #odemknuto
         self.lock_pohyb = True
         
@@ -125,15 +127,26 @@ class MainController():
     #obas je pouziti slov/promennych home a index matouci - jedna se o totez jsou to synonyma
     #OVLADANI
     def M_C_Index(self):
-        print("VOLANI HOME")
-        self.piezo_model.is_homed = False
-        self.piezo_is_homed_kalibrace = False
-        self.piezo_model.index_pozice()
-        send = "RI x y z\n"
-        expect = r"^\$RI x1 y1 z1$" 
-        self.piezo_model.t1 = threading.Thread(target=self.piezo_model.piezo_serial.get_msg_stream, args=(send, expect, self.M_C_Index_done,), daemon=True)
-        self.piezo_model.t1.start()
-        self.piezo_gui.disable_children(self.piezo_gui)
+        print(f"{self.__class__.__name__} VOLANI HOME")
+        InfoMsg = "Prostor před piezopohony musí být volný jinak dojde ke kolizi s objektem!\n\nJe prostor před piezopohony volný?"
+        povoleni = messagebox.askquestion("PROSTOR", InfoMsg)
+        if povoleni == "yes": 
+            self.piezo_model.nastav_rychlost(4000)
+            time.sleep(0.1)
+            self.piezo_model.prostor = True #prostor je volny
+            self.piezo_model.is_homed = False
+            self.piezo_is_homed_kalibrace = False
+            self.piezo_model.index_pozice()
+            send = "RI x y z\n"
+            expect = r"^\$RI x1 y1 z1$" 
+            self.piezo_model.t1 = threading.Thread(target=self.piezo_model.piezo_serial.get_msg_stream, args=(send, expect, self.M_C_Index_done,), daemon=True)
+            self.piezo_model.t1.start()
+            self.piezo_gui.disable_children(self.piezo_gui)
+        else:
+            self.kalibrace.kalibrace == False #kalibrace zakazana
+            self.piezo_model.prostor == False #prostor neni volny
+            
+    
     
     def M_C_odpoved_wait(self, send, expect, callback_fun = None):
         send = send

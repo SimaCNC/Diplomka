@@ -12,6 +12,8 @@ class MCU_model():
         self.lock_frekvence = True #odemknuto
         self.frekvence_vzorky = []
         self.teplota_vzorky = []
+        self.tlak_vzorky = []
+        self.vlhkost_vzorky = []
         
         self.posledni_odpoved_MCU = None
         self.teplota_okoli = None
@@ -53,6 +55,8 @@ class MCU_model():
         self.n = n
         self.frekvence_vzorky.clear()
         self.teplota_vzorky.clear()
+        self.tlak_vzorky.clear()
+        self.vlhkost_vzorky.clear()
         
         #vytvoreni zpravy pro n pocet mereni
         self.lock_frekvence = False
@@ -66,10 +70,16 @@ class MCU_model():
                     data_raw = self.mcu_serial.ser.readline().decode().strip()
                     freq = self.dekodovat('f', data_raw)
                     teplota = self.dekodovat('t', data_raw)
+                    tlak = self.dekodovat('p', data_raw)
+                    vlhkost = self.dekodovat('h', data_raw)
                     if freq:
                         self.frekvence_vzorky.append(freq)
                         if teplota:
                             self.teplota_vzorky.append(teplota)
+                            if tlak:
+                                self.tlak_vzorky.append(tlak)
+                                if vlhkost:
+                                    self.vlhkost_vzorky.append(vlhkost)
                         # print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
                     else:
                         self.frekvence_vzorky.append(freq)
@@ -93,7 +103,7 @@ class MCU_model():
         
         #dekodovani frekvence ze stringu:
         if (self.typ == 'f'):
-            #priklad prichozi zpravy string data: delta=1290, F=111627, T=25.2 <\r><\n> - hterm
+            #priklad prichozi zpravy string data: D=920, F=156521, T=24.6, P=99748.5, H=54.6 <\r><\n> - hterm
             #tvoreny string v C:snprintf(gu8_MSG, sizeof(gu8_MSG), "delta=%d, F=%d Hz\r\n", delta, (uint32_t)freq);
             #chci vytahnout jen to cislo za F= , popripade i staci delta jenom a dopocitat frekvenci v PC
             #hledat F= cislo
@@ -105,7 +115,7 @@ class MCU_model():
                 return 0
             
         elif (self.typ == 't'):
-            #priklad prichozi zpravy string data: delta=1290, F=111627, T=25.2 <\r><\n> - hterm
+            #priklad prichozi zpravy string data: D=920, F=156521, T=24.6, P=99748.5, H=54.6 <\r><\n> - hterm
             match = re.search(r'T=(\d+(?:\.\d+)?)', self.data)
             if match:
                 return(float(match.group(1)))
@@ -113,6 +123,21 @@ class MCU_model():
                 print(f"[{self.__class__.__name__}] NEDEKODOVANA TEPLOTA -- CHYBA !!")
                 return 0
         
+        elif (self.typ == 'p'):
+            match = re.search(r'P=(\d+(?:\.\d+)?)', self.data)
+            if match:
+                return(float(match.group(1)))
+            else:
+                print(f"[{self.__class__.__name__}] NEDEKODOVANA TLAK -- CHYBA !!")
+                return 0
+            
+        elif (self.typ == 'h'):
+            match = re.search(r'H=(\d+(?:\.\d+)?)', self.data)
+            if match:
+                return(float(match.group(1)))
+            else:
+                print(f"[{self.__class__.__name__}] NEDEKODOVANA VLHKOST -- CHYBA !!")
+                return 0
             
         return None
     
