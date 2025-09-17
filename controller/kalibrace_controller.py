@@ -160,9 +160,120 @@ class KalibraceController():
             #smycka pro sber dat a zapis do souboru 
             #doresit - vymenit while za for - a pocitat do max vzdalenosti -- inkrementace piezo dle vzdalenosti
             
-        iterace = 0
+            iterace = 0
+            for _ in range(int(self.pocet_kroku) + 2):
+
+                #pokud je kalibrace nekde ukoncena, tak preruseni iteraci
+                if self.controller.piezo_model.prostor == False or self.kalibrace == False:
+                    break       
+                
+                while self.mcu_model.lock_ad == False:
+                        time.sleep(0.1) 
+
+                if iterace > 0:
+                    #zapsat mcu napeti a piezo polohu
+                    self.vzorky = self.mcu_model.napeti_vzorky.copy()
+                    self.teplota = self.mcu_model.teplota_vzorky.copy()
+                    self.tlak = self.mcu_model.tlak_vzorky.copy()
+                    self.vlhkost = self.mcu_model.vlhkost_vzorky.copy()
+                    self.poloha = round(float(self.piezo_model.y_ref) * 1, 3)
+                    cas = datetime.now().strftime("%H:%M:%S.%f")[:-3]  
+
+                    df = pd.DataFrame({
+                        "cas": [cas]*len(self.vzorky),
+                        "pozice": [f"{self.poloha:.3f}"]*len(self.vzorky),
+                        "napeti": self.vzorky,
+                        "teplota" : self.teplota,
+                        "tlak": self.tlak,
+                        "vlhkost": self.vlhkost
+                    })  
+
+                    df.to_csv(cesta_csv, mode='a', header=False, index=False)
+
+                    #zapis do dat
+                    summary = pd.DataFrame([{
+                        "cas": cas,
+                        "pozice": self.poloha,
+                        "pocet_vzorku": len(df),
+                        "napeti": df["napeti"].mean(),
+                        "teplota_prumer": df["teplota"].mean(),
+                        "tlak_prumer": df["tlak"].mean(),
+                        "vlhkost_prumer": df["vlhkost"].mean()
+                    }])
+
+
+                    self.controller.zpracovani.data = pd.concat([self.controller.zpracovani.data, df], ignore_index= True)
+                    self.controller.zpracovani.data["pocet_vzorku"] = self.pocet_zaznamu
+                    self.controller.zpracovani.data["napeti_prumer"] = df["napeti"].mean()
+                    self.controller.zpracovani.data["teplota_prumer"] = df["teplota"].mean()
+                    self.controller.zpracovani.data["tlak_prumer"] = df["tlak"].mean()
+                    self.controller.zpracovani.data["vlhkost_prumer"] = df["vlhkost"].mean()
+
+                    #pridani jednotlivych polozek vzorku do fronty
+                    for n, t in zip(self.vzorky, self.teplota):
+                        self.queue_graf.put({
+                            "cas" : cas,
+                            "pozice" : self.poloha,
+                            "napeti" : n,
+                            "teplota" : t
+                        })
+
+                    print(f"[{self.__class__.__name__}] zápis dat do fronty!")
+
+                    if iterace <= int(self.pocet_kroku):    
+                            self.controller.M_C_nastav_pohyb_piezo(float(self.delka_kroku))
+                            self.controller.M_C_pohyb_piezo("y")
+                            while not self.controller.lock_pohyb:
+                                time.sleep(0.1)     
+
+                #nastavit pozici - prvi iterace nulove posunuti
+                #time sleep dle rychlosti
+
+                self.mcu_model.lock_ad = False
+
+                if iterace <= int(self.pocet_kroku):
+                    print(f"[{self.__class__.__name__}] iterace")
+                    print(f"[{self.__class__.__name__}] CTENI NAPETI !!")
+                    self.mcu_model.precist_AD(int(self.pocet_zaznamu))
+
+                iterace += 1
+
+            #precteni celeho CSV a nahrani do XLSX
+            df_csv = pd.read_csv(cesta_csv)
+            try:
+                wb = Workbook()
+                ws = wb.active
+                ws.title = "Data"
+                #hlavicka
+                hlavicka = ["Čas (hh:mm:ss)", "Pozice (µm)", "Napětí (V)", "Teplota (°C)", "Tlak (Pa)", "Vlhkost (%)"]
+                bold_font = Font(bold=True)
+                ws.column_dimensions['A'].width = 20
+                ws.column_dimensions['B'].width = 15
+                ws.column_dimensions['C'].width = 15
+                ws.column_dimensions['D'].width = 15
+                ws.column_dimensions['E'].width = 15
+                ws.column_dimensions['F'].width = 15
+                #zapsat hlavicku
+                for col_num, text in enumerate(hlavicka, start=1):
+                    cell = ws.cell(row=1, column=col_num, value=text)
+                    cell.font = bold_font
+                #zapsat data
+                for row_num, row_data in enumerate(df_csv.values, start=2):
+                    for col_num, value in enumerate(row_data, start=1):
+                        ws.cell(row=row_num, column=col_num, value=value)
+                #ulozit
+                wb.save(cesta_xlsx)
+                print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY, EXCEL (temp soubor) VYTVOREN")     
+            except Exception as e:
+                self.kalibrace = False
+                InfoMsg = f"CHYBA\nEXCEL (temp soubor) VZORKY NEVYTVORENY KONEC APLIKACE !!CHYBA!!\npravdepodobne otevreny soubor temp:\n{e}!!"
+                messagebox.showinfo("Chyba", InfoMsg)
+                print(f"[{self.__class__.__name__}] EXCEL VZORKY NEVYTVORENY --CHYBA!! {e}")   
+
+            print(f"[{self.__class__.__name__}] sběr dat hotový")  
+            self.kalibrace = False #konec kalibrace
+            self.mcu_model.lock_ad = True #zase odemknout pro pripad dalsiho mereni
             
-        
         self.t1 = threading.Thread(target=kalibrace_start_inner, daemon=True)
         self.t1.start()
     
@@ -275,7 +386,7 @@ class KalibraceController():
                             "teplota" : t
                         })
                     
-                    print(f"[{self.__class__.__name__}] zápis dat !") 
+                    print(f"[{self.__class__.__name__}] zápis dat do fronty!") 
   
                     if iterace < int(self.pocet_kroku) + 1:    
                         self.controller.M_C_nastav_pohyb_piezo(float(self.delka_kroku))
@@ -287,8 +398,8 @@ class KalibraceController():
                 #time sleep dle rychlosti    
                 self.mcu_model.lock_frekvence = False
                 
-                if iterace < int(self.pocet_kroku) + 1:
-                    print(f"{self.__class__.__name__} iterace")
+                if iterace <= int(self.pocet_kroku):
+                    print(f"[{self.__class__.__name__}] iterace")
                     print(f"[{self.__class__.__name__}] CTENI FREKVENCE !!")
                     self.mcu_model.precist_frekvenci(int(self.pocet_zaznamu))
                 

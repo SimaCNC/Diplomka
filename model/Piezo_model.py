@@ -112,32 +112,32 @@ class Piezo_model():
         
         #KONTROLA PREKROCENI VZDALENOSTI
         if smer == "x":
-            if self.x + self.velikost_pohybu > 10.0:
+            if self.x + float(self.velikost_pohybu) > 10000.0:
                 print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI X!!")
                 return
             
         elif smer == "x-":
-            if self.x - self.velikost_pohybu < -10.0:
+            if self.x - float(self.velikost_pohybu) < -10000.0:
                 print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI X-!!")
                 return
             
         elif smer == "y":
-            if self.y + self.velikost_pohybu > 10.0:
+            if self.y + float(self.velikost_pohybu) > 10000.0:
                 print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI Y!!")
                 return
             
         elif smer == "y-":
-            if self.y - self.velikost_pohybu < -10.0:
+            if self.y - float(self.velikost_pohybu) < -10000.0:
                 print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI Y-!!")
                 return
             
         elif smer == "z":
-            if self.z + self.velikost_pohybu > 10.0:
+            if self.z + float(self.velikost_pohybu) > 10000.0:
                 print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI Z!!")
                 return
             
         elif smer == "z-":
-            if self.z - self.velikost_pohybu < -10.0:
+            if self.z - float(self.velikost_pohybu) < -10000.0:
                 print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] PREKROCENI VZDALENOSTI Z-!!")
                 return
         

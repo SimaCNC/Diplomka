@@ -9,7 +9,9 @@ if TYPE_CHECKING:
 class MCU_model():
     def __init__(self, mcu_serial : 'SerialCtrl'):
         self.mcu_serial = mcu_serial 
+        self.lock_ad = True #odemknuto
         self.lock_frekvence = True #odemknuto
+        self.napeti_vzorky = []
         self.frekvence_vzorky = []
         self.teplota_vzorky = []
         self.tlak_vzorky = []
@@ -50,9 +52,9 @@ class MCU_model():
     def zapsat_teplotu(self):
         self.teplota_okoli = self.posledni_odpoved_MCU
     
-    #cteni frekvence pres UART, n je pocet mereni frekvence - kolikrat ji chci poslat
-    def precist_frekvenci(self, n : int):
-        self.n = n
+    #cteni frekvence pres UART, n je pocet mereni frekvence (=pocet vzorku)
+    def precist_frekvenci(self, pocet_vzorku : int):
+        self.n = pocet_vzorku
         self.frekvence_vzorky.clear()
         self.teplota_vzorky.clear()
         self.tlak_vzorky.clear()
@@ -96,6 +98,50 @@ class MCU_model():
         msg = f"#D{self.n}"
         self.mcu_serial.send_msg_simple(msg) 
             
+    #cteni napeti na AD pres UART, n je pocet mereni AD,napeti (=pocet vzorku)
+    def precist_AD(self, pocet_vzorku : int):
+        self.n = pocet_vzorku
+        self.napeti_vzorky.clear()
+        self.teplota_vzorky.clear()
+        self.tlak_vzorky.clear()
+        self.vlhkost_vzorky.clear()
+        
+        #vytvoreni zpravy pro n pocet mereni
+        self.lock_ad = False
+        self.mcu_serial.ser.reset_input_buffer()
+        
+        def cteni_napeti():
+            
+            while len(self.napeti_vzorky) < self.n:
+                try:
+                    #jeden prichozi vzorek
+                    data_raw = self.mcu_serial.ser.readline().decode().strip()
+                    napeti = self.dekodovat('v', data_raw)
+                    teplota = self.dekodovat('t', data_raw)
+                    tlak = self.dekodovat('p', data_raw)
+                    vlhkost = self.dekodovat('h', data_raw)
+                    if napeti:
+                        self.napeti_vzorky.append(napeti)
+                        if teplota:
+                            self.teplota_vzorky.append(teplota)
+                            if tlak:
+                                self.tlak_vzorky.append(tlak)
+                                if vlhkost:
+                                    self.vlhkost_vzorky.append(vlhkost)
+                        # print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
+                    else:
+                        self.frekvence_vzorky.append(napeti)
+                        print(f"[{self.__class__.__name__} příchozí napeti: {napeti} -- CHYBA!!]")
+                except Exception as e:
+                    print(f"[{self.__class__.__name__}] {e} -- CHYBA!!")
+            
+            self.lock_ad = True
+        
+        self.t1 = threading.Thread(target=cteni_napeti, daemon=True)
+        self.t1.start()
+        
+        msg = f"#A{self.n}"
+        self.mcu_serial.send_msg_simple(msg)
             
     def dekodovat(self, typ, data):
         self.typ = typ
@@ -113,9 +159,16 @@ class MCU_model():
             else:
                 print(f"[{self.__class__.__name__}] NEDEKODOVANA FREKVENCE -- CHYBA !!")
                 return 0
-            
+        
+        elif (self.typ == 'v'):
+            match = re.search(r'V=(\d+(?:\.\d+)?)', self.data)
+            if match:
+                return(float(match.group(1)))
+            else:
+                print(f"[{self.__class__.__name__}] NEDEKODOVANE NAPETI -- CHYBA !!")
+                return 0
+                
         elif (self.typ == 't'):
-            #priklad prichozi zpravy string data: D=920, F=156521, T=24.6, P=99748.5, H=54.6 <\r><\n> - hterm
             match = re.search(r'T=(\d+(?:\.\d+)?)', self.data)
             if match:
                 return(float(match.group(1)))
