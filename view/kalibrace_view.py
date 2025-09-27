@@ -1,18 +1,17 @@
-
-from main_view import KalibraceGUI
 from tkinter import *
 from tkinter import ttk
-from controller.kalibrace_controller import MainController
 import inspect
 from typing import TYPE_CHECKING
 from tkinter import messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 
 if TYPE_CHECKING:
-    pass
+    from view.main_view import KalibraceGUI
+    from controller.kalibrace_controller import MainController
 
 
 class KalibracniOkno(Toplevel):
@@ -24,6 +23,7 @@ class KalibracniOkno(Toplevel):
         self.geometry("1400x800")
         self.config(bg="white")
         self.iconbitmap('icon/logo_uprava2.ico')
+        self.cesta_obrazku = None
         
         # self.scroll_frame = ScrollableFrame(self)
         # self.scroll_frame.pack(fill="both", expand=True)
@@ -89,15 +89,17 @@ class KalibracniOkno(Toplevel):
     
         self.fig, self.ax = plt.subplots()
         #POPISKY GRAFU
+        
+        
         if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
             self.ax.set_title("Závislost velikosti napětí na vzdálenosti přiblíženi stěny k snímači od reference")
-            self.ax.set_xlabel("Vzdálenost (μm)")
+            self.ax.set_xlabel("Vzdálenost (um)")
             self.ax.set_ylabel("Napětí (V)")
             print(f"[{self.__class__.__name__}] vybrané napětí")
           
         elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
             self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače")
-            self.ax.set_xlabel("Vzdálenost (μm)")
+            self.ax.set_xlabel("Vzdálenost (um)")
             self.ax.set_ylabel("Frekvence (Hz)")
             print(f"[{self.__class__.__name__}] vybraná frekvence")
         #POPISKY GRAFU
@@ -132,15 +134,15 @@ class KalibracniOkno(Toplevel):
             pozice = zaznam["pozice"]
             napeti = zaznam["napeti"]
             
-            print(f"[{self.__class__.__name__}] {pozice} {napeti}")
+            print(f"[{self.__class__.__name__}] {pozice}(um) {napeti}(V)")
             
             self.data_pozice.append(round(float(pozice), 3))
-            self.data_vzorky.append(int(napeti))
+            self.data_vzorky.append(round(float(napeti), 3))
             
         #VYCISTIT GRAF + AKTUALIZACE
         self.ax.clear()
         self.ax.set_title("Závislost napětí na přiblížení stěny (reference) ke snímači")
-        self.ax.set_xlabel("Přiblížení (μm)")
+        self.ax.set_xlabel("Přiblížení (um)")
         self.ax.set_ylabel("Napětí (V)")
         self.ax.minorticks_on()
         self.ax.grid(which='major', linestyle='--', linewidth=0.7, alpha=0.8)
@@ -157,11 +159,10 @@ class KalibracniOkno(Toplevel):
         self.canvas.draw_idle()
         print(f"[{self.__class__.__name__}] Počet bodů v grafu: {len(self.data_pozice)}")
         
-        
         #VYCISTIT TEXT + AKTUALIZACE
         
         if self.controller.kalibrace.kalibrace == True:
-            self.after(600, self.aktualizace_graf_frekvence) #rekurzivne, cyklicky chod
+            self.after(600, self.aktualizace_graf_ad) #rekurzivne, cyklicky chod
         
         
         
@@ -175,16 +176,15 @@ class KalibracniOkno(Toplevel):
             pozice = zaznam["pozice"]
             frekvence = zaznam["frekvence"]
             
-            print(f"[{self.__class__.__name__}] {pozice} {frekvence}")
+            print(f"[{self.__class__.__name__}] {pozice}(um) {frekvence}(Hz)")
             
             self.data_pozice.append(round(float(pozice), 3))
             self.data_vzorky.append(int(frekvence))
-                  
-            
+                   
         # VYCISTIT GRAF + AKTUALIZACE
         self.ax.clear()
         self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače")
-        self.ax.set_xlabel("Vzdálenost (μm)")
+        self.ax.set_xlabel("Vzdálenost (um)")
         self.ax.set_ylabel("Frekvence (Hz)")
         self.ax.minorticks_on()
         self.ax.grid(which='major', linestyle='--', linewidth=0.7, alpha=0.8)
@@ -201,14 +201,14 @@ class KalibracniOkno(Toplevel):
         self.canvas.draw_idle()
         print(f"[{self.__class__.__name__}] Počet bodů v grafu: {len(self.data_pozice)}")
         
-        
         #VYCISTIT TEXT + AKTUALIZACE
-        
-        
-        
         
         if self.controller.kalibrace.kalibrace == True:
             self.after(600, self.aktualizace_graf_frekvence) #rekurzivne, cyklicky chod
+        else:
+            #konec mereni - ulozeni grafu
+            self.cesta_obrazku = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_frekvence.png")
+            self.fig.savefig(self.cesta_obrazku, dpi = 300)
              
 
     def window_exit(self):

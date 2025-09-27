@@ -3,6 +3,7 @@ from tkinter import ttk
 from typing import TYPE_CHECKING
 from tkinter import messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import inspect
@@ -491,6 +492,9 @@ class McuGUI(LabelFrame):
             widget.config(state="normal")       
         for child in widget.winfo_children():
             self.enable_children(child)
+  
+  
+  
                
 #------------------------------        
 #KALIBRACE PAGE    
@@ -700,20 +704,184 @@ if __name__ == "__main__":
 
 
 
+#------------------------------        
+#DATA PAGE 
+#VYTVORENI VYHODNOCENI NAMERENYCH DAT
+#------------------------------           
+class DataPage(ScrollableFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent)
+        self.config(bg="white")
+        
+        self.data : LabelFrame = DataGUI(self.scrollable_frame, controller)
+        self.data.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        
+        self.razitko : LabelFrame = RazitkoGUI(self.scrollable_frame, controller)
+        self.razitko.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
+        
+        self.informace_kalibrace : LabelFrame = InformaceKalibraceGUI(self.scrollable_frame, controller)
+        self.informace_kalibrace.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
+        
+        self.okolni_podminky : LabelFrame = OkolniPodminkyGUI(self.scrollable_frame, controller)
+        self.okolni_podminky.grid(row=0, column=3, padx=5, pady=5, sticky="nw")
+                        
+        self.excel_start : LabelFrame = ExcelGUI(self.scrollable_frame, controller)
+        self.excel_start.grid(row=0, column=4, padx=5, pady=5, sticky="nw")
+        
+        self.controler = controller
+        self.controler.set_data_page(self)      
+                  
+                  
+class DataGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent, text="Data kalibrace", padx=5, pady=5, bg="white",bd=5, relief="groove")
+        self.controller = controller
+        
+        #button pro data z posledniho mereni
+        self.BTN_posledni_mereni_data = Button(self, text="Poslední kalibrace", width=18, state="active", command= lambda: self.controller.M_C_posledni_kalibrace_nahrat_data())
+        self.BTN_posledni_mereni_data.grid(row=0, column=0, padx=5, pady=5, sticky="NE")
+        
+        self.BTN_soubor_mereni_data = Button(self, text="Data ze souboru", width=18, state="active", command= lambda:1)
+        self.BTN_soubor_mereni_data.grid(row=1, column=0, padx=5, pady=5, sticky="NE")
+                  
+#USER STORY RaztikoGUI
+        """chci otevrit data, vlozit informace do razitka chci nahrat data zmerena z kalibrace - posledni nebo z excel souboru
+        potom chci videt jake hodnoty jsem nameril a nakonec chci dat excelstart aby se mi vytvoril kalibracni
+        list a rovnou i PDF soubory treba do nove slozky. takze se vytvori slozka s cislem projektu, tam se ulozi
+        excel vzorky, excel vyhodnoceni, PDF soubory - MD001-MD00X
+        """
+class RazitkoGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent, text="Razítko", padx=5, pady=5, bg="white",bd=5, relief="groove")
+        self.controller = controller
+        
+        #RAZITKO label
+        sirka_label = 15
+        self.label_nazev = Label(self, text="Název", bg="white", width=sirka_label, anchor="e")
+        self.label_katedra = Label(self, text="Katedra", bg="white", width=sirka_label, anchor="e")
+        self.label_technicka_reference = Label(self, text="Technická reference", bg="white", width=sirka_label, anchor="e")
+        self.label_kalibroval = Label(self, text="Kalibroval", bg="white", width=sirka_label, anchor="e")
+        self.label_schvalil = Label(self, text="Schválil", bg="white", width=sirka_label, anchor="e")
+        self.label_projekt = Label(self, text="Projekt", bg="white", width=sirka_label, anchor="e")
+        self.label_status_dokumentu = Label(self, text="Status dokumentu", bg="white",width=sirka_label, anchor="e")
+        self.label_cislo_dokumentu = Label(self, text="Číslo dokumentu", bg="white", width=sirka_label, anchor="e")
+        self.label_univerzita = Label(self, text="Univerzita", bg="white", width=sirka_label, anchor="e")
+        self.label_revize = Label(self, text="Revize", bg="white", width=sirka_label, anchor="e")
+        self.label_datum = Label(self, text="Datum", bg="white", width=sirka_label, anchor="e")
+        self.label_jazyk = Label(self, text="Jazyk", bg="white", width=sirka_label, anchor="e")
+        
+        #RAZITKO Entry
+        sirka_entry = 20
+        self.entry_nazev = Entry(self, width=sirka_entry)
+        self.entry_katedra = Entry(self, width=sirka_entry)
+        self.entry_katedra.insert(0, "352") #DEFAULTNE 352
+        self.entry_technicka_reference = Entry(self, width=sirka_entry)
+        self.entry_kalibroval = Entry(self, width=sirka_entry)
+        self.entry_schvalil = Entry(self, width=sirka_entry)
+        self.entry_projekt = Entry(self, width=sirka_entry)
+        self.entry_status_dokumentu = Entry(self, width=sirka_entry)
+        self.entry_status_dokumentu.insert(0,"uvolněno")
+        self.entry_cislo_dokumentu = Entry(self, width=sirka_entry)
+        self.entry_univerzita = Entry(self, width=sirka_entry)
+        self.entry_univerzita.insert(0, "VŠB-TUO")
+        self.entry_revize = Entry(self, width=sirka_entry)
+        self.entry_revize.insert(0, "AA")
+        self.entry_datum = Entry(self, width=sirka_entry)
+        self.entry_datum.insert(0, datetime.today().strftime('%Y-%m-%d'))
+        self.entry_jazyk = Entry(self, width=sirka_entry)
+        self.entry_jazyk.insert(0, "cs")
+        
+        #RAZITKO grid
+        self.label_nazev.grid(row=0, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_nazev.grid(row=0, column=1, padx=5, pady=5,sticky="NE")
+        self.label_katedra.grid(row=1, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_katedra.grid(row=1, column=1, padx=5, pady=5,sticky="NE")
+        self.label_technicka_reference.grid(row=2, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_technicka_reference.grid(row=2, column=1, padx=5, pady=5, sticky="NE")
+        self.label_kalibroval.grid(row=3, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_kalibroval.grid(row=3, column=1, padx=5, pady=5, sticky="NE")
+        self.label_schvalil.grid(row=4, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_schvalil.grid(row=4, column=1, padx=5, pady=5, sticky="NE")
+        self.label_projekt.grid(row=5, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_projekt.grid(row=5, column=1, padx=5, pady=5, sticky="NE")
+        self.label_status_dokumentu.grid(row=6, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_status_dokumentu.grid(row=6, column=1, padx=5, pady=5, sticky="NE")
+        self.label_cislo_dokumentu.grid(row=7, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_cislo_dokumentu.grid(row=7, column=1, padx=5, pady=5, sticky="NE")
+        self.label_univerzita.grid(row=8, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_univerzita.grid(row=8, column=1, padx=5, pady=5, sticky="NE")
+        self.label_revize.grid(row=9, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_revize.grid(row=9, column=1, padx=5, pady=5, sticky="NE")
+        self.label_datum.grid(row=10, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_datum.grid(row=10, column=1, padx=5, pady=5, sticky="NE")
+        self.label_jazyk.grid(row=11, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_jazyk.grid(row=11, column=1, padx=5, pady=5, sticky="NE")
 
+class InformaceKalibraceGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent, text="Informace o kalibraci", padx=5, pady=5, bg="white",bd=5, relief="groove")
+        self.controller = controller
+        
+        #Informace o kalibraci label
+        sirka_label = 15
+        self.label_typ_snimace = Label(self, text="Typ snímače", bg="white", width=sirka_label, anchor="e")
+        self.label_snimany_objekt = Label(self, text="Snímaný objekt", bg="white", width=sirka_label, anchor="e")
+        self.label_snimany_material = Label(self, text="Snímaný materiál", bg="white", width=sirka_label, anchor="e")
+        self.label_obvod_zpracovani = Label(self, text="Obvod zpracování", bg="white", width=sirka_label, anchor="e")
+        self.label_napajeni = Label(self, text="Napájení", bg="white", width=sirka_label, anchor="e")
+        
+        #Informace o kalibraci entry
+        sirka_entry = 20
+        self.entry_typ_snimace = Entry(self, width=sirka_entry)
+        self.entry_snimany_objekt = Entry(self, width=sirka_entry)
+        self.entry_snimany_material = Entry(self, width=sirka_entry)
+        self.entry_obvod_zpracovani = Entry(self, width=sirka_entry)
+        self.entry_napajeni = Entry(self, width=sirka_entry)
+        
+        #Infromace o kalibraci grid
+        self.label_typ_snimace.grid(row=0, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_typ_snimace.grid(row=0, column=1, padx=5, pady=5,sticky="NE")
+        self.label_snimany_objekt.grid(row=1, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_snimany_objekt.grid(row=1, column=1, padx=5, pady=5, sticky="NE")
+        self.label_snimany_material.grid(row=2, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_snimany_material.grid(row=2, column=1, padx=5, pady=5, sticky="NE")
+        self.label_obvod_zpracovani.grid(row=3, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_obvod_zpracovani.grid(row=3, column=1, padx=5, pady=5, sticky="NE")
+        self.label_napajeni.grid(row=4, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_napajeni.grid(row=4, column=1, padx=5, pady=5, sticky="NE")
+        
+class OkolniPodminkyGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent, text="Okolní podmínky", padx=5, pady=5, bg="white",bd=5, relief="groove")
+        self.controller = controller
+        
+        #Informace o podminkach label
+        sirka_label = 15
+        self.label_teplota = Label(self, text="Teplota (°C)", bg="white", width=sirka_label, anchor="e")
+        self.label_tlak = Label(self, text="Tlak (Pa)", bg="white", width=sirka_label, anchor="e")
+        self.label_vlhkost = Label(self, text="Vlhkost (%)", bg="white", width=sirka_label, anchor="e")
+        
+        #Informace o podminkach entry
+        sirka_entry = 20
+        self.entry_teplota = Entry(self, width=sirka_entry)
+        self.entry_tlak = Entry(self, width=sirka_entry)
+        self.entry_vlhkost = Entry(self, width=sirka_entry)
+        
+        #informace o podminkach grid
+        self.label_teplota.grid(row=0, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_teplota.grid(row=0, column=1, padx=5, pady=5,sticky="NE")
+        self.label_tlak.grid(row=1, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_tlak.grid(row=1, column=1, padx=5, pady=5, sticky="NE")
+        self.label_vlhkost.grid(row=2, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_vlhkost.grid(row=2, column=1, padx=5, pady=5, sticky="NE")
+        
 
-
-
-###------------------------------------
-###
-###----------KALIBRACNI OKNO-----------
-###
-###------------------------------------
-
-
-
-                    
-                    
-                    
-    
-            
+class ExcelGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent, text="Excel", padx=5, pady=5, bg="white",bd=5, relief="groove")
+        self.controller = controller
+        
+        
+        self.BTN_excelstart = Button(self, text="Excel start", width=18, state="active", command= lambda: self.controller.M_C_excel_start())
+        self.BTN_excelstart.grid(row=0, column=0, padx=5, pady=5, sticky="NE") 
+        

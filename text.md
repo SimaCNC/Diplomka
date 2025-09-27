@@ -86,4 +86,4 @@ napr. pro nalezeni polohy, v aplikaci napriklad udelat tlacitko start stream pro
 -kicad navrh pcb
 -excel kalibracni list
 -python
-
+-git

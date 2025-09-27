@@ -144,8 +144,15 @@ class Piezo_model():
         posun = f"MR {smer}{self.velikost_pohybu};\n"
         self.piezo_serial.send_msg_simple(posun)
 
-    def pohyb_piezo_GT(self, x, y, z):
-        pozice = f"GT x{x} y{y} z{z};\n"
+    def pohyb_piezo_GT(self, x=None, y=None, z=None):
+        cmd = ["GT"]
+        if x is not None:
+            cmd.append(f"x{x}")
+        if y is not None:
+            cmd.append(f"y{y}")
+        if z is not None:
+            cmd.append(f"z{z}")
+        pozice = " ".join(cmd) + ";\n"
         self.piezo_serial.send_msg_simple(pozice)
     
     def read_serial_data(self):

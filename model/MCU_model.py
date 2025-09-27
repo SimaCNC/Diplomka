@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 import re
 import threading
 import time
+import math
 
 if TYPE_CHECKING:
     from model.Serial_model import SerialCtrl
@@ -74,18 +75,27 @@ class MCU_model():
                     teplota = self.dekodovat('t', data_raw)
                     tlak = self.dekodovat('p', data_raw)
                     vlhkost = self.dekodovat('h', data_raw)
-                    if freq:
+                    if freq is not None:
                         self.frekvence_vzorky.append(freq)
-                        if teplota:
-                            self.teplota_vzorky.append(teplota)
-                            if tlak:
-                                self.tlak_vzorky.append(tlak)
-                                if vlhkost:
-                                    self.vlhkost_vzorky.append(vlhkost)
-                        # print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
                     else:
-                        self.frekvence_vzorky.append(freq)
+                        self.frekvence_vzorky.append(math.nan)
                         print(f"[{self.__class__.__name__} příchozí frekvence: {freq} -- CHYBA!!]")
+                        
+                    if teplota is not None:
+                        self.teplota_vzorky.append(teplota)
+                    else:
+                        self.teplota_vzorky.append(math.nan)
+
+                    if tlak is not None:
+                        self.tlak_vzorky.append(tlak)
+                    else:
+                        self.tlak_vzorky.append(math.nan)
+
+                    if vlhkost is not None:
+                        self.vlhkost_vzorky.append(vlhkost)
+                    else:
+                        self.vlhkost_vzorky.append(math.nan)
+                      
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] {e} -- CHYBA!!")
 

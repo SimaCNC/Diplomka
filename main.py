@@ -10,6 +10,8 @@ mcu_serial = SerialCtrl()
 
 piezo_model = Piezo_model(piezo_serial)
 mcu_model = MCU_model(mcu_serial)
+
+
 #-----MODEL---- 
 
 #-----VIEW----- V
@@ -20,7 +22,6 @@ root_view = RootGUI()
 controller = MainController(root_view.root, root_view, piezo_model, mcu_model)
 controller.setup_gui()
 
-#vytvoreni pohledu a prirazeni
 
 
 #-----CONTROLLER----

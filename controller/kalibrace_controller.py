@@ -12,10 +12,10 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 import matplotlib.pyplot as plt
-from view.main_view import MainPage, KalibracePage
 from datetime import datetime
 import math
 import inspect
+from IPython.display import display
 
 from typing import TYPE_CHECKING
 
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from model.MCU_model import MCU_model
     import tkinter as Tk
     from controller.main_controller import MainController
+    from view.main_view import MainPage, KalibracePage
     
 class KalibraceController():
     def __init__(self, controller : "MainController", piezo_model, mcu_model):
@@ -49,6 +50,7 @@ class KalibraceController():
         
         #misto pro ukladani dat:
         #self.controller.zpracovani.data
+        
         
         #fronta pro vytvareni grafu:
         self.queue_graf = queue.Queue()
@@ -118,16 +120,39 @@ class KalibraceController():
         else:
             self.pocet_zaznamu = pocet
             print(f"[{self.__class__.__name__}] nastavený počet vzorků je nastaven na {self.pocet_zaznamu}")
+            
+    def data_load(self, zpracovani_dat : str,  strategie_kalibrace: str, delka_kroku : float, merena_vzdalenost : float, pocet_vzorku : int, pocet_kroku : int):
+        self.controller.zpracovani.kalibrace_df = pd.DataFrame([{
+            "rozsah_mereni" : merena_vzdalenost,
+            "rozliseni_mereni" : delka_kroku,
+            "pocet_kroku" : pocet_kroku,
+            "pocet_vzorku_na_krok" : pocet_vzorku,
+            "zpracovani_dat" : zpracovani_dat,
+            "strategie_kalibrace" : strategie_kalibrace
+        }])
           
     #SMYCKA VLAKNO FUNKCE kalibrace s AD ZPETNA        
     def kalibrace_start_ad_zpetna(self):
         print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] SMYCKA VLAKNO FUNKCE!!!")      
         self.controller.blok_widgets(self.controller.root) #zablokovani widgetu
+        
+        #KONTROLA PROSTORU PRED KALIBRACI
+        if self.controller.piezo_model.prostor == False:
+                    print(f"[{self.__class__.__name__}] FUNKCE PREDCASNE UKONCENA !!! -- NESPLNENA PODMINKA. BYL PROVEDEN HOME?")
+                    InfoMsg = f"[{self.__class__.__name__}] FUNKCE PREDCASNE UKONCENA !!! -- NESPLNENA PODMINKA. BYL PROVEDEN HOME?"
+                    messagebox.showinfo("INFORMACE", InfoMsg)
+                    return
+                    
         #pracovni slozka:
         if self.pracovni_slozka is not None:
             cesta_csv = os.path.join(self.pracovni_slozka, f"temp.csv")
             cesta_xlsx = os.path.join(self.pracovni_slozka, f"temp.xlsx")
     
+        #promazani DF datoveho modelu ve Zpracovani_model
+        self.controller.zpracovani.kalibrace_df = pd.DataFrame()
+        self.controller.zpracovani.df = pd.DataFrame()
+        self.controller.zpracovani.summary_df = pd.DataFrame()
+        
         #SMYCKA VLAKNO
         def kalibrace_start_inner():
             self.kalibrace = True #start kalibrace
@@ -137,7 +162,7 @@ class KalibraceController():
             
             #zacatek vytvoreni docasneho souboru a zapis do nej
             df_header = pd.DataFrame(columns=["cas", "pozice", "napeti", "teplota", "tlak", "vlhkost"])
-            df_header.to_csv(cesta_csv, index=False, header=False)
+            df_header.to_csv(cesta_csv, index=False, header=True)
             
             #cekani na najeti do referencni polohy zadane uzivatelem
             #zajede na pozici a ceka na dalsi ukoly
@@ -153,7 +178,7 @@ class KalibraceController():
                         pohyb_z = self.piezo_model.z - self.piezo_model.z_ref
                         self.controller.M_C_send_msg_piezo(f"GT x{pohyb_x:.3f} y{pohyb_y:.3f} z{pohyb_z:.3f}")
                         #prodleva nez najede na pozici pro 
-                        time.sleep(5)
+                        time.sleep(1)
                         break
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] CHYBA ({e})")
@@ -165,6 +190,8 @@ class KalibraceController():
 
                 #pokud je kalibrace nekde ukoncena, tak preruseni iteraci
                 if self.controller.piezo_model.prostor == False or self.kalibrace == False:
+                    print(f"[{self.__class__.__name__}] FUNKCE PREDCASNE UKONCENA !!! -- NESPLNENA/Y PODMINKA. BYL PROVEDEN HOME?")
+                    self.controller.kalibrace_finish = False
                     break       
                 
                 while self.mcu_model.lock_ad == False:
@@ -177,6 +204,8 @@ class KalibraceController():
                     self.tlak = self.mcu_model.tlak_vzorky.copy()
                     self.vlhkost = self.mcu_model.vlhkost_vzorky.copy()
                     self.poloha = round(float(self.piezo_model.y_ref) * 1, 3)
+                    if abs(self.poloha) < 1e-9:
+                        self.poloha = 0.0
                     cas = datetime.now().strftime("%H:%M:%S.%f")[:-3]  
 
                     df = pd.DataFrame({
@@ -187,27 +216,24 @@ class KalibraceController():
                         "tlak": self.tlak,
                         "vlhkost": self.vlhkost
                     })  
-
+                    self.controller.zpracovani.df = pd.concat([self.controller.zpracovani.df, df], ignore_index = True)
+                    
+                    #ulozeni surovych dat do csv
                     df.to_csv(cesta_csv, mode='a', header=False, index=False)
 
-                    #zapis do dat
-                    summary = pd.DataFrame([{
+
+                    #zapis statistickych hodnot do dat a poslani do Zpracovani_modelu tridy
+                    summary_df = pd.DataFrame([{
                         "cas": cas,
                         "pozice": self.poloha,
-                        "pocet_vzorku": len(df),
-                        "napeti": df["napeti"].mean(),
+                        "napeti_prumer": df["napeti"].mean(),
+                        "napeti_std": df["napeti"].std(),
                         "teplota_prumer": df["teplota"].mean(),
                         "tlak_prumer": df["tlak"].mean(),
-                        "vlhkost_prumer": df["vlhkost"].mean()
+                        "vlhkost_prumer": df["vlhkost"].mean(),
                     }])
+                    self.controller.zpracovani.summary_df = pd.concat([self.controller.zpracovani.summary_df, summary_df], ignore_index=True)
 
-
-                    self.controller.zpracovani.data = pd.concat([self.controller.zpracovani.data, df], ignore_index= True)
-                    self.controller.zpracovani.data["pocet_vzorku"] = self.pocet_zaznamu
-                    self.controller.zpracovani.data["napeti_prumer"] = df["napeti"].mean()
-                    self.controller.zpracovani.data["teplota_prumer"] = df["teplota"].mean()
-                    self.controller.zpracovani.data["tlak_prumer"] = df["tlak"].mean()
-                    self.controller.zpracovani.data["vlhkost_prumer"] = df["vlhkost"].mean()
 
                     #pridani jednotlivych polozek vzorku do fronty
                     for n, t in zip(self.vzorky, self.teplota):
@@ -263,7 +289,11 @@ class KalibraceController():
                         ws.cell(row=row_num, column=col_num, value=value)
                 #ulozit
                 wb.save(cesta_xlsx)
-                print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY, EXCEL (temp soubor) VYTVOREN")     
+                print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY, EXCEL (temp soubor) VYTVOREN") 
+                self.controller.kalibrace_finish = True
+                self.data_load()    
+                InfoMsg = f"Kalibrace proběhla úspěšně"
+                messagebox.showinfo("Kalibrace", InfoMsg)
             except Exception as e:
                 self.kalibrace = False
                 InfoMsg = f"CHYBA\nEXCEL (temp soubor) VZORKY NEVYTVORENY KONEC APLIKACE !!CHYBA!!\npravdepodobne otevreny soubor temp:\n{e}!!"
@@ -274,25 +304,29 @@ class KalibraceController():
             self.kalibrace = False #konec kalibrace
             self.mcu_model.lock_ad = True #zase odemknout pro pripad dalsiho mereni
             
+            #debug vypis dat rychly
+            display(self.controller.zpracovani.df)
+            display(self.controller.zpracovani.summary_df)
+            
         self.t1 = threading.Thread(target=kalibrace_start_inner, daemon=True)
         self.t1.start()
     
     
-    
-    
-    
-    
-    
+       
     #SMYCKA VLAKNO FUNKCE kalibrace s PULZY DOPREDNA         
     def kalibrace_start_pulzy_dopredna(self):
         print(f"[{self.__class__.__name__}] [{inspect.currentframe().f_code.co_name}] SMYCKA VLAKNO FUNKCE!!!")
-        self.controller.M_C_Index()
+        #self.controller.M_C_Index()
         self.controller.blok_widgets(self.controller.root) #zablokovani widgetu - M_C_Index neco odblokuje
         #pracovni slozka:
         if self.pracovni_slozka is not None:
             cesta_csv = os.path.join(self.pracovni_slozka, f"temp.csv")
             cesta_xlsx = os.path.join(self.pracovni_slozka, f"temp.xlsx")
          
+        #promazani DF datoveho modelu ve Zpracovani_model
+        self.controller.zpracovani.kalibrace_df = pd.DataFrame()
+        self.controller.zpracovani.df = pd.DataFrame()
+        self.controller.zpracovani.summary_df = pd.DataFrame()
          
         #SMYCKA VLAKNO
         def kalibrace_start_inner():
@@ -302,8 +336,8 @@ class KalibraceController():
             self.pocet_kroku = math.floor(self.merena_vzdalenost / self.delka_kroku)
             
             #zacatek vytvoreni docasneho souboru a zapis do nej
-            df_header = pd.DataFrame(columns=["cas", "pozice", "frekvence", "teplota", "tlak", "vlhkost"])
-            df_header.to_csv(cesta_csv, index=False, header=False)
+            df_header = pd.DataFrame(columns=["cas", "pozice", "frekvence", "teplota", "tlak", "vlhkost","pulzy"])
+            df_header.to_csv(cesta_csv, index=False, header=True)
           
             #cekani na vychozi pozici kalibrace
             #zajede na pozici a ceka na dalsi ukoly
@@ -312,7 +346,8 @@ class KalibraceController():
                 try:
                     if self.piezo_model.is_homed == True:
                         print(f"[{self.__class__.__name__}] HOMED!")
-                        self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000") #pozice - max v Y
+                        #self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000") #pozice - max v Y
+                        self.controller.M_C_send_msg_piezo("GT x0 y10000")
                         time.sleep(5) #CAS NEZ DOJEDE z home NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000")
                         self.controller.M_C_nastav_referenci() #jakmile stoji, tak se zreferuje pozice
                         time.sleep(0.5)
@@ -326,6 +361,8 @@ class KalibraceController():
                 
                 #pokud je kalibrace nekde ukoncena, tak preruseni iteraci
                 if self.controller.piezo_model.prostor == False or self.kalibrace == False:
+                    print(f"[{self.__class__.__name__}] FUNKCE PREDCASNE UKONCENA !!! -- NESPLNENA/Y PODMINKA")
+                    self.controller.kalibrace_finish = False
                     break
                 
                 while self.mcu_model.lock_frekvence == False:
@@ -338,8 +375,19 @@ class KalibraceController():
                     self.tlak = self.mcu_model.tlak_vzorky.copy()
                     self.vlhkost = self.mcu_model.vlhkost_vzorky.copy()
                     self.poloha = round(float(self.piezo_model.y_ref) * -1, 3)
+                    if abs(self.poloha) < 1e-9:
+                        self.poloha = 0.000
                     cas = datetime.now().strftime("%H:%M:%S.%f")[:-3]
                 
+                    # lengths = {
+                    #             "vzorky": len(self.vzorky),
+                    #             "teplota": len(self.teplota),
+                    #             "tlak": len(self.tlak),
+                    #             "vlhkost": len(self.vlhkost)
+                    #         }
+                    # print(f"[{self.__class__.__name__}] debug delky prijatych dat: {lengths}")
+                    
+                    
                     df = pd.DataFrame({
                             "cas": [cas]*len(self.vzorky),
                             "pozice": [f"{self.poloha:.3f}"]*len(self.vzorky),
@@ -348,35 +396,25 @@ class KalibraceController():
                             "tlak": self.tlak,
                             "vlhkost": self.vlhkost
                         })
+                    self.controller.zpracovani.df = pd.concat([self.controller.zpracovani.df, df], ignore_index = True)
                     
+                    #ulozeni surovych dat do csv
                     df.to_csv(cesta_csv, mode='a', header=False, index=False)
                     
                     
-                    
-                    
-                    #zapis do dat
-                    summary = pd.DataFrame([{
+                    #zapis statistickych hodnot do dat a poslani do Zpracovani_modelu tridy
+                    summary_df = pd.DataFrame([{
                         "cas": cas,
                         "pozice": self.poloha,
-                        "pocet_vzorku": len(df),
                         "frekvence_prumer": df["frekvence"].mean(),
+                        "frekvence_std": df["frekvence"].std(),
                         "teplota_prumer": df["teplota"].mean(),
                         "tlak_prumer": df["tlak"].mean(),
-                        "vlhkost_prumer": df["vlhkost"].mean()
+                        "vlhkost_prumer": df["vlhkost"].mean(),
                     }])
+                    self.controller.zpracovani.summary_df = pd.concat([self.controller.zpracovani.summary_df, summary_df], ignore_index=True)
                     
-                    self.controller.zpracovani.data = pd.concat([self.controller.zpracovani.data, df], ignore_index= True)
-                    self.controller.zpracovani.data["pocet_vzorku"] = self.pocet_zaznamu
-                    self.controller.zpracovani.data["frekvence_prumer"] = df["frekvence"].mean()
-                    self.controller.zpracovani.data["teplota_prumer"] = df["teplota"].mean()
-                    self.controller.zpracovani.data["tlak_prumer"] = df["tlak"].mean()
-                    self.controller.zpracovani.data["vlhkost_prumer"] = df["vlhkost"].mean()
-                    
-                    
-                    
-                    
-                    
-                    
+                                                            
                     #pridani jednotlivych polozek vzorku do fronty
                     for f, t in zip(self.vzorky, self.teplota):
                         self.queue_graf.put({
@@ -430,7 +468,11 @@ class KalibraceController():
                         ws.cell(row=row_num, column=col_num, value=value)
                 #ulozit
                 wb.save(cesta_xlsx)
-                print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY, EXCEL (temp soubor) VYTVOREN")     
+                print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY, EXCEL (temp soubor) VYTVOREN")
+                self.controller.kalibrace_finish = True
+                self.data_load(zpracovani_dat="pulzy", strategie_kalibrace="dopředná", delka_kroku=self.delka_kroku,merena_vzdalenost=self.merena_vzdalenost ,pocet_vzorku=self.pocet_zaznamu, pocet_kroku=self.pocet_kroku) 
+                InfoMsg = f"Kalibrace proběhla úspěšně"
+                messagebox.showinfo("Kalibrace", InfoMsg)
             except Exception as e:
                 self.kalibrace = False
                 InfoMsg = f"CHYBA\nEXCEL (temp soubor) VZORKY NEVYTVORENY KONEC APLIKACE !!CHYBA!!\npravdepodobne otevreny soubor temp:\n{e}!!"
@@ -441,6 +483,9 @@ class KalibraceController():
             self.kalibrace = False #konec kalibrace
             self.mcu_model.lock_frekvence = True #zase odemknout pro pripad dalsiho mereni
             
+            #debug vypis dat rychly
+            display(self.controller.zpracovani.df)
+            display(self.controller.zpracovani.summary_df)
             
                 
                 

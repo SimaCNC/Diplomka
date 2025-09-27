@@ -3,13 +3,13 @@ from tkinter import messagebox
 import threading
 import time
 import re
-from view.main_view import MainPage, KalibracePage
+from view.main_view import MainPage, KalibracePage, DataPage
 from typing import TYPE_CHECKING
 from controller.kalibrace_controller import KalibraceController
 from model.Zpracovani_model import Zpracovani_model
 
 if TYPE_CHECKING:
-    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI
+    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI, RazitkoGUI, DataGUI, InformaceKalibraceGUI, ExcelGUI, OkolniPodminkyGUI
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
     import tkinter as Tk
@@ -24,6 +24,7 @@ class MainController():
         self.piezo_is_homed_kalibrace = False
         self.mcu = False
         self.main_page = None
+        self.kalibrace_finish = False
         
 
         self.zpracovani = Zpracovani_model(controller=self)
@@ -44,11 +45,20 @@ class MainController():
         self.stav_gui : StavGUI = kalibrace_page.stav_gui
         self.protokol_gui : Typ_protokolGUI = kalibrace_page.protokol_gui
         self.kalibrace_gui : KalibraceGUI = kalibrace_page.kalibrace_gui
+        
+    def set_data_page(self, data_page : 'DataPage'):
+        self.data_page = data_page
+        self.datagui : 'DataGUI' = data_page.data
+        self.razitko : 'RazitkoGUI' = data_page.razitko
+        self.informace_kalibrace : 'InformaceKalibraceGUI' = data_page.informace_kalibrace
+        self.okolni_podminky : 'OkolniPodminkyGUI' = data_page.okolni_podminky
+        self.excel_start : 'ExcelGUI' = data_page.excel_start
     
 #Vytvoreni pohledu a definovani prvniho okna - Pripojeni = main      
     def setup_gui(self):
         self.view.add_frame("main", MainPage, self, self.piezo_model, self.mcu_model)
         self.view.add_frame("kalibrace", KalibracePage, self, self.piezo_model, self.mcu_model)
+        self.view.add_frame("data", DataPage, self)
         #self.view.add_frame("nápověda")
         self.view.show_frame("main")
 
@@ -246,7 +256,7 @@ class MainController():
         povoleni = messagebox.askquestion("PROSTOR", InfoMsg)
         
         if povoleni == "yes":
-            self.piezo_model.pohyb_piezo_GT(0, 10000, 0)
+            self.piezo_model.pohyb_piezo_GT(x=None, y=10000, z=None)
             
             def callback_po_odpovedi_piezo():
                 self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu) #aktualni pozice po zastaveni
@@ -318,4 +328,67 @@ class MainController():
         print(f"[M_C_aktualizace_stav]: aktualizace stavu")
         
     
+        
+        
+#DATA PAGE
+
+    def M_C_posledni_kalibrace_nahrat_data(self):
+        if self.kalibrace_finish == True:
+            #informace o kalibraci - nahrani z kalibrace do modelu
+            self.zpracovani.prirazeni_hodnot()
+            
+            #okolni podminky - nahrani z modelu do main view
+            self.okolni_podminky.entry_teplota.delete(0, "end")
+            self.okolni_podminky.entry_teplota.insert(0, str(self.zpracovani.teplota))
+            self.okolni_podminky.entry_tlak.delete(0, "end")
+            self.okolni_podminky.entry_tlak.insert(0, str(self.zpracovani.tlak))
+            self.okolni_podminky.entry_vlhkost.delete(0, "end")
+            self.okolni_podminky.entry_vlhkost.insert(0, str(self.zpracovani.relativni_vlhkost))
+    
+        else:
+            InfoMsg = f"Data nejsou ucelená, nutno provést kalibraci"
+            messagebox.showerror("Neucelená data", InfoMsg)
+            print(f"{self.__class__.__name__} NEUCELENA DATA !!!! NELZE NAHRAT !!")
+            
+    
+    def M_C_excel_start(self):
+        if self.kalibrace_finish == True:
+            #PRIRAZENI HODNOT Z ENTRY VSTUPU
+            #Razitko
+            self.zpracovani.nazev = str(self.razitko.entry_nazev.get())
+            self.zpracovani.katedra = str(self.razitko.entry_katedra.get())
+            self.zpracovani.technicka_reference = str(self.razitko.entry_technicka_reference.get())
+            self.zpracovani.kalibroval = str(self.razitko.entry_kalibroval.get())
+            self.zpracovani.schvalil = str(self.razitko.entry_schvalil.get())
+            self.zpracovani.projekt = str(self.razitko.entry_projekt.get())
+            self.zpracovani.status_dokumentu = str(self.razitko.entry_status_dokumentu.get())
+            self.zpracovani.cislo_dokumentu = str(self.razitko.entry_cislo_dokumentu.get())
+            self.zpracovani.univerzita = str(self.razitko.entry_univerzita.get())
+            self.zpracovani.revize = str(self.razitko.entry_revize.get())
+            self.zpracovani.datum = str(self.razitko.entry_datum.get())
+            self.zpracovani.jazyk = str(self.razitko.entry_jazyk.get())
+
+            #Informace o kalibraci
+            self.zpracovani.typ_snimace = str(self.informace_kalibrace.entry_typ_snimace.get())
+            self.zpracovani.snimany_objekt = str(self.informace_kalibrace.entry_snimany_objekt.get())
+            self.zpracovani.snimany_material = str(self.informace_kalibrace.entry_snimany_material.get())
+            self.zpracovani.obvod_zpracovani = str(self.informace_kalibrace.entry_obvod_zpracovani.get())
+            self.zpracovani.napajeni_snimace = str(self.informace_kalibrace.entry_napajeni.get())
+
+            #Okolni podminky mereni
+            
+            
+            
+            
+            self.zpracovani.vytvorit_excel()
+            return
+            
+        #POokud neproblehla kalibrace -- nelze vytvaret excel
+        else:
+            InfoMsg = f"Data nejsou ucelená, nutno provést kalibraci"
+            messagebox.showerror("Neucelená data", InfoMsg)
+            print(f"{self.__class__.__name__} NEUCELENA DATA !!!! NELZE NAHRAT !!")
+            
+        
+        
         
