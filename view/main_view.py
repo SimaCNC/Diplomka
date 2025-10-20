@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import inspect
 from view.kalibrace_view import KalibracniOkno
+import sys
 if TYPE_CHECKING:
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
@@ -66,6 +67,7 @@ class RootGUI():
         #     print("Zavirani okna a vypnuti aplikace")
         #     self.root.destroy()
         self.root.destroy()
+        sys.exit(0)
         print("Zavirani okna a vypnuti aplikace")
 
 #-----------------------------------------------------     
@@ -138,7 +140,7 @@ class MainPage(ScrollableFrame):
         self.piezo_gui.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
         
         self.mcu_gui : LabelFrame = McuGUI(self.scrollable_frame, controller, mcu_model)
-        self.mcu_gui.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
+        self.mcu_gui.grid(row=1, column=1, padx=5, pady=5, sticky="nw")
         
         self.controler = controller
         self.controler.set_main_page(self)
@@ -860,12 +862,14 @@ class OkolniPodminkyGUI(LabelFrame):
         self.label_teplota = Label(self, text="Teplota (°C)", bg="white", width=sirka_label, anchor="e")
         self.label_tlak = Label(self, text="Tlak (Pa)", bg="white", width=sirka_label, anchor="e")
         self.label_vlhkost = Label(self, text="Vlhkost (%)", bg="white", width=sirka_label, anchor="e")
+        self.label_osvetleni = Label(self, text="Osvětlení (lux)", bg="white", width=sirka_label, anchor="e")
         
         #Informace o podminkach entry
         sirka_entry = 20
         self.entry_teplota = Entry(self, width=sirka_entry)
         self.entry_tlak = Entry(self, width=sirka_entry)
         self.entry_vlhkost = Entry(self, width=sirka_entry)
+        self.entry_osvetleni = Entry(self, width=sirka_entry)
         
         #informace o podminkach grid
         self.label_teplota.grid(row=0, column=0, padx=5, pady=5, sticky="NE")
@@ -874,6 +878,8 @@ class OkolniPodminkyGUI(LabelFrame):
         self.entry_tlak.grid(row=1, column=1, padx=5, pady=5, sticky="NE")
         self.label_vlhkost.grid(row=2, column=0, padx=5, pady=5, sticky="NE")
         self.entry_vlhkost.grid(row=2, column=1, padx=5, pady=5, sticky="NE")
+        self.label_osvetleni.grid(row=3, column=0, padx=5, pady=5, sticky="NE")
+        self.entry_osvetleni.grid(row=3, column=1, padx=5, pady=5, sticky="NE")
         
 
 class ExcelGUI(LabelFrame):

@@ -1,0 +1,50 @@
+@startuml
+skinparam monochrome true
+skinparam defaultFontSize 15
+skinparam dpi 300
+title MVC Architektura aplikace kalibrace snímačů malých posunutí
+
+package "Model" as MOD {
+  [Piezo_model]
+  [Serial_model]
+  [MCU_model]
+  [Zpracovani_model]
+}
+
+package "View" as V {
+  [Main_view]
+  [Kalibrace_view]
+}
+
+package "Controller" as CTRL {
+  [MainController]
+  [KalibraceController]
+}
+
+' Vztahy mezi castmi
+MainController <--> Piezo_model
+MainController <--> Serial_model
+MainController <--> MCU_model
+MainController <--> Zpracovani_model 
+
+
+KalibraceController <-> MainController
+ 
+
+Main_view <--> MainController 
+Kalibrace_view <-- MainController
+
+' note top of MOD
+'   Jednotlivé objekty s příslušnými atributy a metodami
+' end note
+
+' note top of V
+'    Zobrazení okna aplikace - to co vidí uživatel
+'    Nastavování a ukládání dat kalibrace
+' end note
+
+' note top of CTRL
+'   Ovládá a propojuje jednotlivé části celé aplikace
+' end note
+
+@enduml

@@ -344,6 +344,8 @@ class MainController():
             self.okolni_podminky.entry_tlak.insert(0, str(self.zpracovani.tlak))
             self.okolni_podminky.entry_vlhkost.delete(0, "end")
             self.okolni_podminky.entry_vlhkost.insert(0, str(self.zpracovani.relativni_vlhkost))
+            self.okolni_podminky.entry_osvetleni.delete(0, "end")
+            self.okolni_podminky.entry_osvetleni.insert(0, str(self.zpracovani.osvetleni))
     
         else:
             InfoMsg = f"Data nejsou ucelená, nutno provést kalibraci"

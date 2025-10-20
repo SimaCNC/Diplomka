@@ -17,6 +17,7 @@ class MCU_model():
         self.teplota_vzorky = []
         self.tlak_vzorky = []
         self.vlhkost_vzorky = []
+        self.osvetleni_vzorky = []
         
         self.posledni_odpoved_MCU = None
         self.teplota_okoli = None
@@ -60,6 +61,7 @@ class MCU_model():
         self.teplota_vzorky.clear()
         self.tlak_vzorky.clear()
         self.vlhkost_vzorky.clear()
+        self.osvetleni_vzorky.clear()
         
         #vytvoreni zpravy pro n pocet mereni
         self.lock_frekvence = False
@@ -75,6 +77,7 @@ class MCU_model():
                     teplota = self.dekodovat('t', data_raw)
                     tlak = self.dekodovat('p', data_raw)
                     vlhkost = self.dekodovat('h', data_raw)
+                    osvetleni = self.dekodovat('l', data_raw)
                     if freq is not None:
                         self.frekvence_vzorky.append(freq)
                     else:
@@ -95,6 +98,11 @@ class MCU_model():
                         self.vlhkost_vzorky.append(vlhkost)
                     else:
                         self.vlhkost_vzorky.append(math.nan)
+                        
+                    if osvetleni is not None:
+                        self.osvetleni_vzorky.append(osvetleni)
+                    else:
+                        self.osvetleni_vzorky.append(math.nan)
                       
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] {e} -- CHYBA!!")
@@ -115,6 +123,7 @@ class MCU_model():
         self.teplota_vzorky.clear()
         self.tlak_vzorky.clear()
         self.vlhkost_vzorky.clear()
+        self.osvetleni_vzorky.clear()
         
         #vytvoreni zpravy pro n pocet mereni
         self.lock_ad = False
@@ -130,18 +139,33 @@ class MCU_model():
                     teplota = self.dekodovat('t', data_raw)
                     tlak = self.dekodovat('p', data_raw)
                     vlhkost = self.dekodovat('h', data_raw)
+                    osvetleni = self.dekodovat('l', data_raw)
                     if napeti:
                         self.napeti_vzorky.append(napeti)
-                        if teplota:
-                            self.teplota_vzorky.append(teplota)
-                            if tlak:
-                                self.tlak_vzorky.append(tlak)
-                                if vlhkost:
-                                    self.vlhkost_vzorky.append(vlhkost)
-                        # print(f"[{self.__class__.__name__}] příchozí frekvence: {freq}")
                     else:
                         self.frekvence_vzorky.append(napeti)
-                        print(f"[{self.__class__.__name__} příchozí napeti: {napeti} -- CHYBA!!]")
+                        print(f"[{self.__class__.__name__} příchozí napeti: {napeti} -- CHYBA!!]")  
+                          
+                    if teplota is not None:
+                        self.teplota_vzorky.append(teplota)
+                    else:
+                        self.teplota_vzorky.append(math.nan)
+
+                    if tlak is not None:
+                        self.tlak_vzorky.append(tlak)
+                    else:
+                        self.tlak_vzorky.append(math.nan)
+
+                    if vlhkost is not None:
+                        self.vlhkost_vzorky.append(vlhkost)
+                    else:
+                        self.vlhkost_vzorky.append(math.nan)
+                        
+                    if osvetleni is not None:
+                        self.osvetleni_vzorky.append(osvetleni)
+                    else:
+                        self.osvetleni_vzorky.append(math.nan)
+                    
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] {e} -- CHYBA!!")
             
@@ -200,6 +224,14 @@ class MCU_model():
                 return(float(match.group(1)))
             else:
                 print(f"[{self.__class__.__name__}] NEDEKODOVANA VLHKOST -- CHYBA !!")
+                return 0
+            
+        elif (self.typ == 'l'):
+            match = re.search(r'L=(\d+)', self.data)
+            if match:
+                return(float(match.group(1)))
+            else:
+                print(f"[{self.__class__.__name__}] NEDEKODOVANE OSVETLENI -- CHYBA !!")
                 return 0
             
         return None

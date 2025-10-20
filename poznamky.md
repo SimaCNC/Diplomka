@@ -15,16 +15,16 @@ cisla u popisku v controlleru odpovidaji cca strane kde se spojitost vyskytuje
 #upravy
 
 **KOD**
--je potreba projit veskere promenne s hodnotou None.. pravdepodobne nedodelana/zapomenuta cast 
--pridat ukladani souboru (nazev),  apod. do kalibrace okno
+
 - je potreba zacit kreslit diagram dedeni apod.
 -hledat mista k osetreni (Start kalibrace - verifikace podminek, )
 - Detailne testovat aplikaci pro bugy, zrejme pri startu kalibrace sekvence rizeni piezopohonu problemy s vlakny race conditions, seriova linka
 -popsat co jaka strategie dela: self.strategie = ["-", "Dopředná", "Zpětná","Opakovatelnost", "Hystereze", "Hystereze_2" ]
 - nejaky excel pro vyhodnoceni s datasheetem - pythonu okno vyhodnoceni vypoctu + ale kopirovaci okna,
-excel start - vytvoreni excelu s zadanymi prvky v python skriptu
 > statisticke vyhodnoceni - vyhodnoceni v pythonu a propsat do excelu - podivat se na vlastnosti senzoru a propsat.
-
+- opravit pripojeni k aplikaci kdyz se treba odpoji piezopohony
+-opravit chovani grafu pri preruseni sberu dat
+-classa pro delani grafu
 
 **PCB**
 -citlivejsi obvod oscilatoru
@@ -38,7 +38,7 @@ OP zesilovac v zapojeni..
 -debug konektory
 
 -JAK JSEM PCB VYTVORIL -schema navrh ,deska - kiCAD,frezovani - flatCAM,zarovnani protoze nerovna deska cuprextitova - Autoleveller, pouziti frezky s - LinuxCNC,... material, proces vyroby blokove schema pochodu pouzitych SW
-# udelat statickou charakteristiku A/D prevodniku pro OP zapojeni
+# udelat statickou charakteristiku A/D prevodniku pro OP zapojeni - asi neni treba - mozna pro zapojeni s OP amps
 - krabicka s prvky
 - LM pro rozdeleni napeti
 - STOP tlačítko, softwarove reseni skrz MCU - preruseni INT, specialni vlakno v aplikaci pro cteni 
@@ -48,19 +48,14 @@ OP zesilovac v zapojeni..
 
 
 **3D MODEL**
--pridat znacky pohybu os
 -udelat vykresy soucastek
-- rotacni osa?
 -do prilohy v diplomce udelat vykresy - rozjezdy max a min, misto pro ulozeni kalibracniho snimace
 
 -JAK JSEM MODEL VYTVORIL - Inventor, LinuxCNC... material,freza,
 
 **MCU**
--dodelat stream hodnot pro zachyceni informaci pro umisteni senzoru - pouze pro debugging skrz nejaky monitor,
-napr. pro nalezeni polohy, v aplikaci napriklad udelat tlacitko start stream pro poslani prikazu a nasledny stream hodnot z mcu, pro nalezeni vhoodne polohy umisteni pieza (-tl. max pozice v Y piezo) 
-- stream pulzy, stream AD --- pro stream a zisk dat udelany kruhovy buffer datova struktura..?
-- obvod s casovacem pro LED blink.
-- LEDky ovladat samostatnym prikazem
+
+
 
 **SENZOR**
 -kapacitni  -- oscilator
@@ -79,11 +74,9 @@ napr. pro nalezeni polohy, v aplikaci napriklad udelat tlacitko start stream pro
 -z vyhodnoceni nalezt MIN/MAX - propsat do vyhodnoceni
 
 **EXCEL**
--pro vyhodnoceni je nutne drzet v nejakem datovem typu vsechny informace - struktura, napr. v classe excel pro vykresleni
--
+
 
 **TODO**
 -kicad navrh pcb
--excel kalibracni list
 -python
 -git

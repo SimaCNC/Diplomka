@@ -31,8 +31,8 @@ if TYPE_CHECKING:
 class KalibraceController():
     def __init__(self, controller : "MainController", piezo_model, mcu_model):
         self.controller : MainController = controller
-        self.piezo_model : Piezo_model = piezo_model
-        self.mcu_model : MCU_model = mcu_model
+        self.piezo_model : Piezo_model = piezo_model #asi neni potreba - delat pres controller
+        self.mcu_model : MCU_model = mcu_model #asi neni potreba - delat pres controller
         self.pracovni_slozka = None
         self.pracovni_soubor = None
         self.delka_kroku = None
@@ -46,6 +46,7 @@ class KalibraceController():
         self.teplota = []
         self.tlak = []
         self.vlhkost = []
+        self.osvetleni = []
         self.poloha = 0
         
         #misto pro ukladani dat:
@@ -153,6 +154,9 @@ class KalibraceController():
         self.controller.zpracovani.df = pd.DataFrame()
         self.controller.zpracovani.summary_df = pd.DataFrame()
         
+        #kalibrace jeste neskoncila
+        self.controller.kalibrace_finish = False
+        
         #SMYCKA VLAKNO
         def kalibrace_start_inner():
             self.kalibrace = True #start kalibrace
@@ -161,7 +165,7 @@ class KalibraceController():
             self.pocet_kroku = math.floor(self.merena_vzdalenost / self.delka_kroku)
             
             #zacatek vytvoreni docasneho souboru a zapis do nej
-            df_header = pd.DataFrame(columns=["cas", "pozice", "napeti", "teplota", "tlak", "vlhkost"])
+            df_header = pd.DataFrame(columns=["cas", "pozice", "napeti", "teplota", "tlak", "vlhkost", "osvetleni"])
             df_header.to_csv(cesta_csv, index=False, header=True)
             
             #cekani na najeti do referencni polohy zadane uzivatelem
@@ -178,7 +182,7 @@ class KalibraceController():
                         pohyb_z = self.piezo_model.z - self.piezo_model.z_ref
                         self.controller.M_C_send_msg_piezo(f"GT x{pohyb_x:.3f} y{pohyb_y:.3f} z{pohyb_z:.3f}")
                         #prodleva nez najede na pozici pro 
-                        time.sleep(1)
+                        time.sleep(5)
                         break
                 except Exception as e:
                     print(f"[{self.__class__.__name__}] CHYBA ({e})")
@@ -203,6 +207,7 @@ class KalibraceController():
                     self.teplota = self.mcu_model.teplota_vzorky.copy()
                     self.tlak = self.mcu_model.tlak_vzorky.copy()
                     self.vlhkost = self.mcu_model.vlhkost_vzorky.copy()
+                    self.osvetleni = self.mcu_model.osvetleni_vzorky.copy()
                     self.poloha = round(float(self.piezo_model.y_ref) * 1, 3)
                     if abs(self.poloha) < 1e-9:
                         self.poloha = 0.0
@@ -214,7 +219,8 @@ class KalibraceController():
                         "napeti": self.vzorky,
                         "teplota" : self.teplota,
                         "tlak": self.tlak,
-                        "vlhkost": self.vlhkost
+                        "vlhkost": self.vlhkost,
+                        "osvetleni" : self.osvetleni
                     })  
                     self.controller.zpracovani.df = pd.concat([self.controller.zpracovani.df, df], ignore_index = True)
                     
@@ -231,6 +237,7 @@ class KalibraceController():
                         "teplota_prumer": df["teplota"].mean(),
                         "tlak_prumer": df["tlak"].mean(),
                         "vlhkost_prumer": df["vlhkost"].mean(),
+                        "osvetleni_prumer" : df["osvetleni"].mean()
                     }])
                     self.controller.zpracovani.summary_df = pd.concat([self.controller.zpracovani.summary_df, summary_df], ignore_index=True)
 
@@ -264,6 +271,11 @@ class KalibraceController():
 
                 iterace += 1
 
+                #pokud vsechny pozice bylo zmereno, tak uspesna kalibrace
+                if iterace == (self.pocet_kroku):
+                    self.controller.kalibrace_finish = True
+                    
+                
             #precteni celeho CSV a nahrani do XLSX
             df_csv = pd.read_csv(cesta_csv)
             try:
@@ -271,7 +283,7 @@ class KalibraceController():
                 ws = wb.active
                 ws.title = "Data"
                 #hlavicka
-                hlavicka = ["Čas (hh:mm:ss)", "Pozice (µm)", "Napětí (V)", "Teplota (°C)", "Tlak (Pa)", "Vlhkost (%)"]
+                hlavicka = ["Čas (hh:mm:ss)", "Pozice (µm)", "Napětí (V)", "Teplota (°C)", "Tlak (Pa)", "Vlhkost (%)", "Osvetleni (lux)"]
                 bold_font = Font(bold=True)
                 ws.column_dimensions['A'].width = 20
                 ws.column_dimensions['B'].width = 15
@@ -279,6 +291,7 @@ class KalibraceController():
                 ws.column_dimensions['D'].width = 15
                 ws.column_dimensions['E'].width = 15
                 ws.column_dimensions['F'].width = 15
+                ws.column_dimensions['G'].width = 15
                 #zapsat hlavicku
                 for col_num, text in enumerate(hlavicka, start=1):
                     cell = ws.cell(row=1, column=col_num, value=text)
@@ -291,8 +304,11 @@ class KalibraceController():
                 wb.save(cesta_xlsx)
                 print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY, EXCEL (temp soubor) VYTVOREN") 
                 self.controller.kalibrace_finish = True
-                self.data_load()    
-                InfoMsg = f"Kalibrace proběhla úspěšně"
+                self.data_load(zpracovani_dat="A/D", strategie_kalibrace="zpětná", delka_kroku=self.delka_kroku, merena_vzdalenost=self.merena_vzdalenost ,pocet_vzorku=self.pocet_zaznamu, pocet_kroku=self.pocet_kroku)    
+                if self.controller.kalibrace_finish == False:
+                    InfoMsg = f"Data byly uloženy ale kalibrace neproběhla celá"
+                else:
+                    InfoMsg = f"Kalibrace proběhla úspěšně"
                 messagebox.showinfo("Kalibrace", InfoMsg)
             except Exception as e:
                 self.kalibrace = False
@@ -327,6 +343,9 @@ class KalibraceController():
         self.controller.zpracovani.kalibrace_df = pd.DataFrame()
         self.controller.zpracovani.df = pd.DataFrame()
         self.controller.zpracovani.summary_df = pd.DataFrame()
+        
+        #kalibrace jeste neskoncila
+        self.controller.kalibrace_finish = False
          
         #SMYCKA VLAKNO
         def kalibrace_start_inner():
@@ -336,7 +355,7 @@ class KalibraceController():
             self.pocet_kroku = math.floor(self.merena_vzdalenost / self.delka_kroku)
             
             #zacatek vytvoreni docasneho souboru a zapis do nej
-            df_header = pd.DataFrame(columns=["cas", "pozice", "frekvence", "teplota", "tlak", "vlhkost","pulzy"])
+            df_header = pd.DataFrame(columns=["cas", "pozice", "frekvence", "teplota", "tlak", "vlhkost","osvetleni","pulzy"])
             df_header.to_csv(cesta_csv, index=False, header=True)
           
             #cekani na vychozi pozici kalibrace
@@ -348,7 +367,7 @@ class KalibraceController():
                         print(f"[{self.__class__.__name__}] HOMED!")
                         #self.controller.M_C_send_msg_piezo("GT x0 y10000 z-5000") #pozice - max v Y
                         self.controller.M_C_send_msg_piezo("GT x0 y10000")
-                        time.sleep(5) #CAS NEZ DOJEDE z home NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000")
+                        time.sleep(5) #CAS NEZ DOJEDE z home NA POZICI UDANE V self.controller.M_C_send_msg_piezo("GT x0 y10000 z5000") #TOTO MOZNA OPRAVIT TODO
                         self.controller.M_C_nastav_referenci() #jakmile stoji, tak se zreferuje pozice
                         time.sleep(0.5)
                         break
@@ -374,6 +393,7 @@ class KalibraceController():
                     self.teplota = self.mcu_model.teplota_vzorky.copy()
                     self.tlak = self.mcu_model.tlak_vzorky.copy()
                     self.vlhkost = self.mcu_model.vlhkost_vzorky.copy()
+                    self.osvetleni = self.mcu_model.osvetleni_vzorky.copy()
                     self.poloha = round(float(self.piezo_model.y_ref) * -1, 3)
                     if abs(self.poloha) < 1e-9:
                         self.poloha = 0.000
@@ -394,7 +414,8 @@ class KalibraceController():
                             "frekvence": self.vzorky,
                             "teplota" : self.teplota,
                             "tlak": self.tlak,
-                            "vlhkost": self.vlhkost
+                            "vlhkost": self.vlhkost,
+                            "osvetleni" : self.osvetleni
                         })
                     self.controller.zpracovani.df = pd.concat([self.controller.zpracovani.df, df], ignore_index = True)
                     
@@ -411,6 +432,7 @@ class KalibraceController():
                         "teplota_prumer": df["teplota"].mean(),
                         "tlak_prumer": df["tlak"].mean(),
                         "vlhkost_prumer": df["vlhkost"].mean(),
+                        "osvetleni_prumer" : df["osvetleni"].mean()
                     }])
                     self.controller.zpracovani.summary_df = pd.concat([self.controller.zpracovani.summary_df, summary_df], ignore_index=True)
                     
@@ -442,6 +464,10 @@ class KalibraceController():
                     self.mcu_model.precist_frekvenci(int(self.pocet_zaznamu))
                 
                 iterace += 1
+                
+                #pokud vsechny pozice bylo zmereno, tak uspesna kalibrace
+                if iterace == (self.pocet_kroku):
+                    self.controller.kalibrace_finish = True
                   
             #precteni celeho CSV a nahrani do XLSX
             df_csv = pd.read_csv(cesta_csv)
@@ -450,7 +476,7 @@ class KalibraceController():
                 ws = wb.active
                 ws.title = "Data"
                 #hlavicka
-                hlavicka = ["Čas (hh:mm:ss)", "Pozice (µm)", "Frekvence (Hz)", "Teplota (°C)", "Tlak (Pa)", "Vlhkost (%)"]
+                hlavicka = ["Čas (hh:mm:ss)", "Pozice (µm)", "Frekvence (Hz)", "Teplota (°C)", "Tlak (Pa)", "Vlhkost (%)", "Osvetleni (lux)"]
                 bold_font = Font(bold=True)
                 ws.column_dimensions['A'].width = 20
                 ws.column_dimensions['B'].width = 15
@@ -458,6 +484,7 @@ class KalibraceController():
                 ws.column_dimensions['D'].width = 15
                 ws.column_dimensions['E'].width = 15
                 ws.column_dimensions['F'].width = 15
+                ws.column_dimensions['G'].width = 15
                 #zapsat hlavicku
                 for col_num, text in enumerate(hlavicka, start=1):
                     cell = ws.cell(row=1, column=col_num, value=text)
@@ -469,9 +496,11 @@ class KalibraceController():
                 #ulozit
                 wb.save(cesta_xlsx)
                 print(f"[{self.__class__.__name__}] EXCEL VZORKY VYTVORENY, EXCEL (temp soubor) VYTVOREN")
-                self.controller.kalibrace_finish = True
                 self.data_load(zpracovani_dat="pulzy", strategie_kalibrace="dopředná", delka_kroku=self.delka_kroku,merena_vzdalenost=self.merena_vzdalenost ,pocet_vzorku=self.pocet_zaznamu, pocet_kroku=self.pocet_kroku) 
-                InfoMsg = f"Kalibrace proběhla úspěšně"
+                if self.controller.kalibrace_finish == False:
+                    InfoMsg = f"Data byly uloženy ale kalibrace neproběhla celá"
+                else:
+                    InfoMsg = f"Kalibrace proběhla úspěšně"
                 messagebox.showinfo("Kalibrace", InfoMsg)
             except Exception as e:
                 self.kalibrace = False

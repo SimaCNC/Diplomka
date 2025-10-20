@@ -17,6 +17,7 @@ from datetime import datetime
 import math
 import shutil
 from tkinter import messagebox
+import win32com.client as win32
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -99,7 +100,8 @@ class Zpracovani_model():
         self.tlak_pozice = "O18"
         self.relativni_vlhkost = None
         self.relativni_vlhkost_pozice = "O19"
-        self.svitivost = None
+        self.osvetleni = None
+        self.osvetleni_pozice = "O20"
         
         #Namerene hodnoty
         self.merena_velicina = None
@@ -121,6 +123,7 @@ class Zpracovani_model():
         self.teplota = round(float(self.summary_df["teplota_prumer"].mean()), 1)
         self.tlak = round(float(self.summary_df["tlak_prumer"].mean()), 1)
         self.relativni_vlhkost = round(float(self.summary_df["vlhkost_prumer"].mean()), 1)
+        self.osvetleni = round(float(self.summary_df["osvetleni_prumer"].mean()), 1)
         
     def vytvorit_excel(self):
         #nacteni template - ORIGINALNI TEMPLATE - ZKOPIROVANI
@@ -173,7 +176,7 @@ class Zpracovani_model():
         self.sheet[self.teplota_pozice] = str(self.teplota)
         self.sheet[self.tlak_pozice] = str(self.tlak)
         self.sheet[self.relativni_vlhkost_pozice] = str(self.relativni_vlhkost)
-        
+        self.sheet[self.osvetleni_pozice] = str(self.osvetleni)
     
         #pridani dat z kalibrace do MD005
         pracovni_slozka = os.path.join(self.controller.kalibrace.pracovni_slozka, "temp.xlsx")
@@ -187,7 +190,7 @@ class Zpracovani_model():
         
         #vytvoreni grafu prubehu merenych hodnot
         self.sheet = wb["MD002"]
-        img_cesta = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_frekvence.png")
+        img_cesta = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_frekvence.png") #TODO OPRAVIT JMENO SOUBORU OBRAZKU !!!
         img = Image(img_cesta)
         img.width = 573
         img.height = 427
@@ -199,7 +202,83 @@ class Zpracovani_model():
         #ulozeni do pracovni slozky
         pracovni_slozka = os.path.join(self.controller.kalibrace.pracovni_slozka, "vyhodnoceni.xlsx")
         wb.save(pracovni_slozka)
+        wb.close()
+        del wb
+        time.sleep(5)
+        
+        pracovni_slozka_pdf = os.path.join(self.controller.kalibrace.pracovni_slozka, "vyhodnoceni.pdf")
+        
+        # self.vytvorit_pdf(pracovni_slozka, pracovni_slozka_pdf, ["MD001", "MD002", "MD003", "MD004"])
+        
+        #otevreni souboru
         os.startfile(pracovni_slozka)
+        if os.path.exists(pracovni_slozka_pdf):
+           os.startfile(pracovni_slozka_pdf)
+        else:
+           print(f"[{self.__class__.__name__}]PDF soubor nebyl nalezen!")
+        
+        
+        
+        
+        
+        
+        
+    def vytvorit_pdf(self, xlsx_cesta, pdf_cesta, sheets):
+        if os.path.exists(pdf_cesta):
+            os.remove(pdf_cesta)
+        excel = win32.Dispatch("Excel.Application")
+        excel.Visible = False
+        excel.DisplayAlerts = False
+        
+        wb = excel.Workbooks.Open(xlsx_cesta)
+        
+        excel.Sheets(sheets).Select()
+        # wb.Save()
+        
+        print(f"[{self.__class__.__name__} DEBUG]")
+        time.sleep(5)
+        
+        excel.ActiveSheet.ExportAsFixedFormat(0, pdf_cesta)
+        
+        time.sleep(5)
+        wb.Close(False)
+        excel.Quit()
+        
+        # # wb_com = excel.Workbooks.Open(xlsx_cesta)
+
+        
+        # # wb_com.Sheets(sheets[0]).Select()
+        # # for s in sheets[1:]:
+        # #     wb_com.Sheets(s).Select(False)
+
+        # # wb_com.ActiveWindow.SelectedSheets.ExportAsFixedFormat(0, pdf_cesta)
+
+        # # wb_com.Close(False)
+        # # excel.Quit()
+        # del excel
+        # if os.path.exists(pdf_cesta):
+        #     os.remove(pdf_cesta)
+
+        # excel = win32.Dispatch("Excel.Application")
+        # excel.Visible = False
+        # excel.DisplayAlerts = False
+
+        # wb_com = excel.Workbooks.Open(xlsx_cesta)
+
+        # # Vyber listů k exportu
+        # for i, sheet_name in enumerate(sheets):
+        #     if i == 0:
+        #         wb_com.Sheets(sheet_name).Select()
+        #     else:
+        #         wb_com.Sheets(sheet_name).Select(False)
+
+        # wb_com.ExportAsFixedFormat(0, pdf_cesta)
+
+        # wb_com.Close(False)
+        # excel.Quit()
+        # del excel
+        
+        
         
         
         

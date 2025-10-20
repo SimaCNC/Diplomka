@@ -53,6 +53,7 @@ class KalibracniOkno(Toplevel):
         self.data_teplota = []
         self.data_vlhkost = []    
         self.data_tlak = []
+        self.data_osvetleni = []
         
         
         #VYBER METODY KALIBRACE A JEHO SPUSTENI PRES CONTROLLER
@@ -163,7 +164,11 @@ class KalibracniOkno(Toplevel):
         
         if self.controller.kalibrace.kalibrace == True:
             self.after(600, self.aktualizace_graf_ad) #rekurzivne, cyklicky chod
-        
+        #konec mereni - ulozeni grafu
+        else:
+            self.cesta_obrazku = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_ad.png")
+            self.fig.savefig(self.cesta_obrazku, dpi = 300)
+            print(f"{self.__class__.__name__} OBRAZEK ULOZEN")
         
         
     #GRAF PRO FREKVENCI: elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
@@ -197,7 +202,7 @@ class KalibracniOkno(Toplevel):
 
         self.ax.relim()
         self.ax.autoscale_view()
-        self.fig.tight_layout()  # zajistí správné layoutování popisků
+        self.fig.tight_layout()  # layouty popisku
         self.canvas.draw_idle()
         print(f"[{self.__class__.__name__}] Počet bodů v grafu: {len(self.data_pozice)}")
         
@@ -209,6 +214,7 @@ class KalibracniOkno(Toplevel):
             #konec mereni - ulozeni grafu
             self.cesta_obrazku = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_frekvence.png")
             self.fig.savefig(self.cesta_obrazku, dpi = 300)
+            print(f"{self.__class__.__name__} OBRAZEK ULOZEN")
              
 
     def window_exit(self):
@@ -216,7 +222,7 @@ class KalibracniOkno(Toplevel):
         # if zavrit:
         #     print("Zavirani okna a vypnuti aplikace")
         self.controller.odblok_widgets(self.controller.root)
-        self.kalibrace_gui.BTN_kalibraceStart.config(state="active")
+        self.kalibrace_gui.BTN_kalibraceStart.config(state="active") #asi pres controller
         self.destroy()
         print(f"[{self.__class__.__name__}] Zavirani okna")
         
