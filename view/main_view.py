@@ -45,6 +45,7 @@ class RootGUI():
         self.menu.add_command(label="Připojení", command=lambda: self.show_frame("main"))      
         self.menu.add_command(label="Kalibrace", command=lambda: self.show_frame("kalibrace"))
         self.menu.add_command(label="Data", command=lambda : self.show_frame("data"))
+        self.menu.add_command(label="Filtrace", command=lambda : self.show_frame("filtrace"))
         self.menu.add_command(label="Nápověda", command=lambda : self.show_frame("napoveda"))
         self.menu.add_command(label="Konec", command=self.window_exit)
         
@@ -58,6 +59,10 @@ class RootGUI():
     def show_frame(self, name):
         if name in self.frames:
             self.frames[name].tkraise()
+            if name == "filtrace":
+                self.root.geometry("1250x1000")
+            else:
+                self.root.geometry("1250x800")
         else:
             print(f"[frame] Frame '{name}' NEEXISTUJE")
         
@@ -891,3 +896,165 @@ class ExcelGUI(LabelFrame):
         self.BTN_excelstart = Button(self, text="Excel start", width=18, state="active", command= lambda: self.controller.M_C_excel_start())
         self.BTN_excelstart.grid(row=0, column=0, padx=5, pady=5, sticky="NE") 
         
+        
+        
+#TRIDA PRO SPRAVOVANI FILTRACE        
+class FiltracePage(ScrollableFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent)
+        self.config(bg="white")
+        
+        self.original_data : LabelFrame = OriginalFiltraceGUI(self.scrollable_frame, controller)
+        self.original_data.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        
+        # self.separator = ttk.Separator(self.scrollable_frame, orient="vertical")
+        # self.separator.grid(row=0, column=1, pady=5, sticky="ns")
+        
+        # self.separator = ttk.Separator(self.scrollable_frame, orient="horizontal")
+        # self.separator.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
+        
+        self.filtrovane_data : LabelFrame = FiltraceDatGUI(self.scrollable_frame, controller)
+        self.filtrovane_data.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
+        
+        self.controler = controller
+        self.controler.set_filtrace_page(self)
+        
+#frame originalni data
+class OriginalFiltraceGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent, text="Originální data", padx=5, pady=5, bg="white",bd=5, relief="groove")
+        self.controller = controller
+        
+        self.frame_popisky = Frame(self, bg="white")
+        self.label_soubor = Label(self.frame_popisky, text="Pracovní soubor:", bg="white", width=20, anchor="w")
+        self.Entry_pracovni_soubor = Entry(self.frame_popisky, width=30, state="normal")
+        self.Entry_pracovni_soubor.insert(0, "N/A")
+        self.Entry_pracovni_soubor.config(state="readonly")
+        self.BTN_pracovni_soubor = Button(self.frame_popisky, text="SOUBOR", width=18, state="active", command= lambda: self.controller.M_C_vybrat_pracovni_soubor())
+        
+        #oblast pro graf
+        self.frame_graf = Frame(self, bg="white") 
+        
+        
+        self.label_otevrit = Label(self.frame_popisky, text="Vykreslit data:", bg="white", width=20, anchor="w")
+        self.BTN_otevrit = Button(self.frame_popisky, text="VYKRESLIT", width=18, state="active", command = lambda: self.controller.M_C_vykresli_graf()) #TODO dodelat vykresleni
+        
+        self.publish()
+        
+    def publish(self):
+        self.frame_popisky.grid(row=0, column=0, pady=5, sticky="nw")
+        self.label_soubor.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        self.Entry_pracovni_soubor.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
+        self.BTN_pracovni_soubor.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
+        self.frame_graf.grid(row=0, column=1, padx=0, pady=0, sticky="nw")
+        
+        self.label_otevrit.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
+        self.BTN_otevrit.grid(row=1, column=1, padx=5, pady=5, sticky="nw")
+        
+    
+    def graf(self):
+        if not hasattr(self, 'canvas'):
+            self.fig, (self.ax1, self.ax2, self.ax3, self.ax4, self.ax5) = plt.subplots(1, 5, figsize=(30,5))
+            self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_graf)
+            self.canvas.get_tk_widget().grid(row=0, column=0, columnspan=2, sticky="nsew", padx=0, pady=0)
+            self.fig.subplots_adjust(left=0.05, right=0.95, wspace=0.3)
+            
+        self.ax1.clear()
+        self.ax1.grid(True, which='both', linestyle='--', alpha=0.5)
+        self.ax1.set_title(f"Závislost {self.controller.filtrace.data_typ} na přiblížení stěny (reference) ke snímači")
+        self.ax1.set_xlabel("přiblížení (um)")
+        self.ax1.set_ylabel(f"{self.controller.filtrace.data_typ} {self.controller.filtrace.data_jednotka}")
+        self.ax1.minorticks_on()
+        self.ax1.plot(self.controller.filtrace.data_x, self.controller.filtrace.data_y, 'o', markersize=5, color='red')
+        
+        self.ax2.clear()
+        self.ax2.grid(True, which='both', linestyle='--', alpha=0.5)
+        self.ax2.set_title("Průběh teploty")
+        self.ax2.set_xlabel("čas t(s)")
+        self.ax2.set_ylabel("Teplota (°C)")
+        self.ax2.plot(self.controller.filtrace.data_cas, self.controller.filtrace.data_teplota, 'o', color='red')
+        
+        self.ax3.clear()
+        self.ax3.grid(True, which='both', linestyle='--', alpha=0.5)
+        self.ax3.set_title("Průběh tlak")
+        self.ax3.set_xlabel("čas t(s)")
+        self.ax3.set_ylabel("Tlak (Pa)")
+        self.ax3.plot(self.controller.filtrace.data_cas, self.controller.filtrace.data_tlak, 'o', color='red')
+        
+        self.ax4.clear()
+        self.ax4.grid(True, which='both', linestyle='--', alpha=0.5)
+        self.ax4.set_title("Průběh vlhkost")
+        self.ax4.set_xlabel("čas t(s)")
+        self.ax4.set_ylabel("Vlhkost (%)")
+        self.ax4.plot(self.controller.filtrace.data_cas, self.controller.filtrace.data_vlhkost, 'o', color='red')
+        
+        self.ax5.clear()
+        self.ax5.grid(True, which='both', linestyle='--', alpha=0.5)
+        self.ax5.set_title("Průběh osvětlení")
+        self.ax5.set_xlabel("čas t(s)")
+        self.ax5.set_ylabel("Vlhkost (lux)")
+        self.ax5.plot(self.controller.filtrace.data_cas, self.controller.filtrace.data_osvetleni, 'o', color='red')
+
+        self.canvas.draw()
+
+#frame filtrace dat
+class FiltraceDatGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent, text='Filtrace dat', padx=5, pady=5, bg="white", bd=5, relief="groove")
+        self.controller = controller
+        
+        self.frame_popisky = Frame(self, bg="white")
+        self.label_pracovni_slozka = Label(self.frame_popisky, text="Pracovní složka:", bg="white", width=20, anchor="w")
+        self.Entry_pracovni_slozka = Entry(self.frame_popisky, width=30, state="normal")
+        #Pokud byla vybrana pracovni slozka, tak se automaticky vybere stejna pro filtraci - lze zmenit dale
+        if self.controller.kalibrace.pracovni_slozka is not None:
+            self.Entry_pracovni_slozka.insert(0, f"{self.controller.kalibrace.pracovni_slozka}")
+            self.controller.filtrace.pracovni_slozka = self.controller.kalibrace.pracovni_slozka
+        else:
+            self.Entry_pracovni_slozka.insert(0, "N/A")
+        self.Entry_pracovni_slozka.config(state="readonly")
+        self.BTN_pracovni_slozka = Button(self.frame_popisky, text="SLOŽKA", width=18, state="active", command= self.controller.filtrace.vybrat_pracovni_slozku)
+        
+        self.label_metoda_filtrace1 = Label(self.frame_popisky, text="Metoda filtrace 1:", bg="white", width=20, anchor="w")
+        self.vybrana_filtrace1 = StringVar()
+        self.vybrana_filtrace1.set("-")
+        self.drop_filtrace1 = OptionMenu(self.frame_popisky, self.vybrana_filtrace1, *self.controller.filtrace.metody_filtrace)
+        self.drop_filtrace1.config(width=18)
+        self.BTN_filtrace1 = Button(self.frame_popisky, text="FILTRACE1", width=18, state="active", command=None)
+        self.label_metoda_filtrace2 = Label(self.frame_popisky, text="Metoda filtrace 2:", bg="white", width=20, anchor="w")
+        self.vybrana_filtrace2 = StringVar()
+        self.vybrana_filtrace2.set("-")
+        self.drop_filtrace2 = OptionMenu(self.frame_popisky, self.vybrana_filtrace2, *self.controller.filtrace.metody_filtrace)
+        self.drop_filtrace2.config(width=18)
+        self.BTN_filtrace2 = Button(self.frame_popisky, text="FILTRACE2", width=18, state="active", command=None)
+        self.label_metoda_filtrace3 = Label(self.frame_popisky, text="Metoda filtrace 3:", bg="white", width=20, anchor="w")
+        self.vybrana_filtrace3 = StringVar()
+        self.vybrana_filtrace3.set("-")
+        self.drop_filtrace3 = OptionMenu(self.frame_popisky, self.vybrana_filtrace3, *self.controller.filtrace.metody_filtrace)
+        self.drop_filtrace3.config(width=18)
+        self.BTN_filtrace3 = Button(self.frame_popisky, text="FILTRACE3", width=18, state="active", command=None)
+        
+        
+        
+        self.frame_graf = Frame(self, bg="white")
+        
+        
+        
+        self.publish()
+        
+    def publish(self):
+        self.frame_popisky.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        self.label_pracovni_slozka.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        self.Entry_pracovni_slozka.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
+        self.BTN_pracovni_slozka.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
+        self.label_metoda_filtrace1.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
+        self.drop_filtrace1.grid(row=1, column=1, padx=5, pady=5, sticky="nw")
+        self.BTN_filtrace1.grid(row=1, column=2, padx=5, pady=5, sticky="nw")
+        self.label_metoda_filtrace2.grid(row=2, column=0, padx=5, pady=5, sticky="nw")
+        self.drop_filtrace2.grid(row=2, column=1, padx=5, pady=5, sticky="nw")
+        self.BTN_filtrace2.grid(row=2, column=2, padx=5, pady=5, sticky="nw")
+        self.label_metoda_filtrace3.grid(row=3, column=0, padx=5, pady=5, sticky="nw")
+        self.drop_filtrace3.grid(row=3, column=1, padx=5, pady=5, sticky="nw")
+        self.BTN_filtrace3.grid(row=3, column=2, padx=5, pady=5, sticky="nw")
+
+        self.frame_graf.grid(row=0, column=1, padx=5, pady=5, sticky="nw")

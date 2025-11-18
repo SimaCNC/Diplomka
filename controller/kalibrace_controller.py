@@ -35,6 +35,7 @@ class KalibraceController():
         self.mcu_model : MCU_model = mcu_model #asi neni potreba - delat pres controller
         self.pracovni_slozka = None
         self.pracovni_soubor = None
+        self.kalibracni_obrazek = None
         self.delka_kroku = None
         self.merena_vzdalenost = None
         self.pocet_kroku = None #pocet kroku pro mereni = pocet iteraci ve for smycce
@@ -156,6 +157,10 @@ class KalibraceController():
         
         #kalibrace jeste neskoncila
         self.controller.kalibrace_finish = False
+        
+        #vycisteni fronty
+        with self.queue_graf.mutex:
+            self.queue_graf.queue.clear() 
         
         #SMYCKA VLAKNO
         def kalibrace_start_inner():
@@ -346,13 +351,18 @@ class KalibraceController():
         
         #kalibrace jeste neskoncila
         self.controller.kalibrace_finish = False
-         
+        
+        #vycisteni fronty
+        with self.queue_graf.mutex:
+            self.queue_graf.queue.clear() 
+                
         #SMYCKA VLAKNO
         def kalibrace_start_inner():
             self.kalibrace = True #start kalibrace
             time.sleep(5) #delay kvuli index pozici
             print(f"[{self.__class__.__name__}] VLAKNO KALIBRACE!")
             self.pocet_kroku = math.floor(self.merena_vzdalenost / self.delka_kroku)
+            
             
             #zacatek vytvoreni docasneho souboru a zapis do nej
             df_header = pd.DataFrame(columns=["cas", "pozice", "frekvence", "teplota", "tlak", "vlhkost","osvetleni","pulzy"])

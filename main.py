@@ -14,7 +14,7 @@ mcu_model = MCU_model(mcu_serial)
 
 #-----MODEL---- 
 
-#-----VIEW----- V
+#-----VIEW----- 
 root_view = RootGUI()
 #-----VIEW----- 
 

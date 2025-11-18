@@ -156,7 +156,7 @@ class KalibracniOkno(Toplevel):
             
         self.ax.relim()
         self.ax.autoscale_view()
-        self.fig.tight_layout()  # zajistí správné layoutování popisků
+        self.fig.tight_layout() 
         self.canvas.draw_idle()
         print(f"[{self.__class__.__name__}] Počet bodů v grafu: {len(self.data_pozice)}")
         
@@ -167,6 +167,7 @@ class KalibracniOkno(Toplevel):
         #konec mereni - ulozeni grafu
         else:
             self.cesta_obrazku = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_ad.png")
+            self.controller.kalibrace.kalibracni_obrazek = self.cesta_obrazku
             self.fig.savefig(self.cesta_obrazku, dpi = 300)
             print(f"{self.__class__.__name__} OBRAZEK ULOZEN")
         
@@ -213,6 +214,7 @@ class KalibracniOkno(Toplevel):
         else:
             #konec mereni - ulozeni grafu
             self.cesta_obrazku = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_frekvence.png")
+            self.controller.kalibrace.kalibracni_obrazek = self.cesta_obrazku
             self.fig.savefig(self.cesta_obrazku, dpi = 300)
             print(f"{self.__class__.__name__} OBRAZEK ULOZEN")
              

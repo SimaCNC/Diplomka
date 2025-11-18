@@ -190,7 +190,8 @@ class Zpracovani_model():
         
         #vytvoreni grafu prubehu merenych hodnot
         self.sheet = wb["MD002"]
-        img_cesta = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_frekvence.png") #TODO OPRAVIT JMENO SOUBORU OBRAZKU !!!
+        # img_cesta = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_frekvence.png") #TODO OPRAVIT JMENO SOUBORU OBRAZKU !!!
+        img_cesta = self.controller.kalibrace.kalibracni_obrazek
         img = Image(img_cesta)
         img.width = 573
         img.height = 427
@@ -200,13 +201,31 @@ class Zpracovani_model():
         
         
         #ulozeni do pracovni slozky
-        pracovni_slozka = os.path.join(self.controller.kalibrace.pracovni_slozka, "vyhodnoceni.xlsx")
+        datum = datetime.now().strftime("%Y-%m-%d")
+        poradi = 0
+        jmeno_souboru = f"vyhodnoceni_{datum}_{poradi:03}.xlsx"
+        je_v_adresari = True
+        while(je_v_adresari is True):
+            cesta = os.path.join(self.controller.kalibrace.pracovni_slozka, jmeno_souboru)
+            if os.path.exists(cesta):
+                je_v_adresari = True
+                poradi += 1
+                jmeno_souboru = f"vyhodnoceni_{datum}_{poradi:03}.xlsx"
+            else:
+                je_v_adresari = False
+        
+        
+        
+        pracovni_slozka = os.path.join(self.controller.kalibrace.pracovni_slozka, jmeno_souboru)
         wb.save(pracovni_slozka)
         wb.close()
         del wb
-        time.sleep(5)
+        time.sleep(2)
         
-        pracovni_slozka_pdf = os.path.join(self.controller.kalibrace.pracovni_slozka, "vyhodnoceni.pdf")
+        jmeno_pdf = f"vyhodnoceni_{datum}_{poradi:03}.pdf"
+        pracovni_slozka_pdf = os.path.join(self.controller.kalibrace.pracovni_slozka, jmeno_pdf)
+        
+        print(f"[{self.__class__.__name__}] VYTVORENY .xlsx a .pdf SOUBORY s nazvy {jmeno_souboru}")
         
         # self.vytvorit_pdf(pracovni_slozka, pracovni_slozka_pdf, ["MD001", "MD002", "MD003", "MD004"])
         

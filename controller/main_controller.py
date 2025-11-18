@@ -3,13 +3,14 @@ from tkinter import messagebox
 import threading
 import time
 import re
-from view.main_view import MainPage, KalibracePage, DataPage
+from view.main_view import MainPage, KalibracePage, DataPage, FiltracePage
 from typing import TYPE_CHECKING
 from controller.kalibrace_controller import KalibraceController
 from model.Zpracovani_model import Zpracovani_model
+from model.Filtrace_model import FiltraceData
 
 if TYPE_CHECKING:
-    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI, RazitkoGUI, DataGUI, InformaceKalibraceGUI, ExcelGUI, OkolniPodminkyGUI
+    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI, RazitkoGUI, DataGUI, InformaceKalibraceGUI, ExcelGUI, OkolniPodminkyGUI, OriginalFiltraceGUI, FiltraceDatGUI
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
     import tkinter as Tk
@@ -29,6 +30,7 @@ class MainController():
 
         self.zpracovani = Zpracovani_model(controller=self)
         self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
+        self.filtrace = FiltraceData(controller = self)
         
         self.lock_1 = True #odemknuto
         self.lock_pohyb = True
@@ -53,12 +55,20 @@ class MainController():
         self.informace_kalibrace : 'InformaceKalibraceGUI' = data_page.informace_kalibrace
         self.okolni_podminky : 'OkolniPodminkyGUI' = data_page.okolni_podminky
         self.excel_start : 'ExcelGUI' = data_page.excel_start
+        
+    def set_filtrace_page(self, filtrace_page : 'FiltracePage'):
+        self.filtrace_page = filtrace_page
+        self.original_filtrace_gui : 'OriginalFiltraceGUI' = filtrace_page.original_data
+        self.filtrace_data_gui : 'FiltraceDatGUI' = filtrace_page.filtrovane_data
+        
+        
     
 #Vytvoreni pohledu a definovani prvniho okna - Pripojeni = main      
     def setup_gui(self):
         self.view.add_frame("main", MainPage, self, self.piezo_model, self.mcu_model)
         self.view.add_frame("kalibrace", KalibracePage, self, self.piezo_model, self.mcu_model)
         self.view.add_frame("data", DataPage, self)
+        self.view.add_frame("filtrace", FiltracePage, self)
         #self.view.add_frame("nápověda")
         self.view.show_frame("main")
 
@@ -391,6 +401,18 @@ class MainController():
             messagebox.showerror("Neucelená data", InfoMsg)
             print(f"{self.__class__.__name__} NEUCELENA DATA !!!! NELZE NAHRAT !!")
             
+            
+            
+    def M_C_vybrat_pracovni_soubor(self):
+        self.filtrace.nahrat_data()
         
         
-        
+    def M_C_vykresli_graf(self):
+        if self.filtrace.data_typ == "napětí" or self.filtrace.data_typ == "frekvence":
+            print(f"[{self.__class__.__name__}] probiha vykresleni grafu")
+            self.original_filtrace_gui.graf()
+            
+            
+            
+        else:
+            print(f"[{self.__class__.__name__}] nepodporovany typ souboru pro otevreni")
