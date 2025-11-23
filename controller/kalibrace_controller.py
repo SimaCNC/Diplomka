@@ -114,11 +114,11 @@ class KalibraceController():
             self.controller.kalibrace_gui.Entry_slozka_pracovni.config(state="readonly")
             
     def nastavit_vzorky(self, pocet):
-        if int(pocet) > 100:
-            print(f"[{self.__class__.__name__}] CHYBA!! : nastavený počet vzorků převyšuje číslo 100, nastaveno implicitne 100 !!")
+        if int(pocet) > 150:
+            print(f"[{self.__class__.__name__}] CHYBA!! : nastavený počet vzorků převyšuje číslo 150, nastaveno implicitne 150 !!")
             self.controller.kalibrace_gui.entry_pocet_vzorku.delete(0, 'end')
-            self.controller.kalibrace_gui.entry_pocet_vzorku.insert(0, "100")
-            self.pocet_zaznamu = 100
+            self.controller.kalibrace_gui.entry_pocet_vzorku.insert(0, "150")
+            self.pocet_zaznamu = 150
         else:
             self.pocet_zaznamu = pocet
             print(f"[{self.__class__.__name__}] nastavený počet vzorků je nastaven na {self.pocet_zaznamu}")

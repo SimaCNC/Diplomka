@@ -45,7 +45,7 @@ class RootGUI():
         self.menu.add_command(label="Připojení", command=lambda: self.show_frame("main"))      
         self.menu.add_command(label="Kalibrace", command=lambda: self.show_frame("kalibrace"))
         self.menu.add_command(label="Data", command=lambda : self.show_frame("data"))
-        self.menu.add_command(label="Filtrace", command=lambda : self.show_frame("filtrace"))
+        self.menu.add_command(label="Kalibrační křivky", command=lambda : self.show_frame("kalibrační křivky"))
         self.menu.add_command(label="Nápověda", command=lambda : self.show_frame("napoveda"))
         self.menu.add_command(label="Konec", command=self.window_exit)
         
@@ -898,32 +898,65 @@ class ExcelGUI(LabelFrame):
         
         
         
-#TRIDA PRO SPRAVOVANI FILTRACE        
-class FiltracePage(ScrollableFrame):
+#TRIDA PRO SPRAVOVANI KALIBRACNICH KRIVEK        
+class KalibracniKrivkyPage(ScrollableFrame):
     def __init__(self, parent, controller : 'MainController'):
         super().__init__(parent)
         self.config(bg="white")
-        
-        self.original_data : LabelFrame = OriginalFiltraceGUI(self.scrollable_frame, controller)
-        self.original_data.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
-        
-        # self.separator = ttk.Separator(self.scrollable_frame, orient="vertical")
-        # self.separator.grid(row=0, column=1, pady=5, sticky="ns")
-        
-        # self.separator = ttk.Separator(self.scrollable_frame, orient="horizontal")
-        # self.separator.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
-        
-        self.filtrovane_data : LabelFrame = FiltraceDatGUI(self.scrollable_frame, controller)
-        self.filtrovane_data.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
-        
         self.controler = controller
-        self.controler.set_filtrace_page(self)
+        self.original_data_instance = []
+        self.instance_pocet = 1
+        
+        self.original_data_pocet : LabelFrame = OriginalDataPocet(self.scrollable_frame, self.controler)
+        self.original_data_pocet.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        
+        self.update_data(1)    
+                
+        self.filtrovane_data : LabelFrame = FiltraceDatGUI(self.scrollable_frame, self.controler)
+        self.filtrovane_data.grid(row=10, column=0, padx=5, pady=5, sticky="nw")
+        
+        
+        self.controler.set_KalibracniKrivky_page(self)
+        
+        
+    def update_data(self, inkrement):
+        if not (1 <= self.instance_pocet + inkrement <= 10):
+            return
+        
+        self.instance_pocet = self.instance_pocet + (inkrement)
+        
+        if inkrement == 1:
+            instance : LabelFrame = OriginalDataGUI(self.scrollable_frame, self.controler, self.instance_pocet)
+            instance.grid(row=self.instance_pocet, column=0, padx=5, pady=5, sticky="nw")
+            self.original_data_instance.append(instance)
+            
+        
+        elif inkrement == -1:
+            last = self.original_data_instance.pop()
+            last.destroy()
+        
+class OriginalDataPocet(LabelFrame):
+    def __init__(self, parent, controller : 'MainController'):
+        super().__init__(parent, text="Přidat data", padx=5, pady=5, bg="white",bd=5, relief="groove")
+        self.controller = controller
+        self.label_data_pocet = Label(self, text="Křivky (max 10)", bg="white", width=20, anchor="w")
+
+        self.BTN_original_data_pridat = Button(self, text="+", width=8, state="active", command=lambda: self.controller.M_C_zmena_poctu_OriginalData(1))
+        self.BTN_original_data_odebrat = Button(self, text="-", width=8, state="active", command=lambda: self.controller.M_C_zmena_poctu_OriginalData(-1))
+        self.publish()
+        
+    def publish(self):
+        self.label_data_pocet.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        self.BTN_original_data_pridat.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
+        self.BTN_original_data_odebrat.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
+        
         
 #frame originalni data
-class OriginalFiltraceGUI(LabelFrame):
-    def __init__(self, parent, controller : 'MainController'):
+class OriginalDataGUI(LabelFrame):
+    def __init__(self, parent, controller : 'MainController', poradi_instance):
         super().__init__(parent, text="Originální data", padx=5, pady=5, bg="white",bd=5, relief="groove")
         self.controller = controller
+        self.poradi_instance = poradi_instance
         
         self.frame_popisky = Frame(self, bg="white")
         self.label_soubor = Label(self.frame_popisky, text="Pracovní soubor:", bg="white", width=20, anchor="w")
@@ -992,7 +1025,7 @@ class OriginalFiltraceGUI(LabelFrame):
         self.ax5.grid(True, which='both', linestyle='--', alpha=0.5)
         self.ax5.set_title("Průběh osvětlení")
         self.ax5.set_xlabel("čas t(s)")
-        self.ax5.set_ylabel("Vlhkost (lux)")
+        self.ax5.set_ylabel("Osvětlení (lux)")
         self.ax5.plot(self.controller.filtrace.data_cas, self.controller.filtrace.data_osvetleni, 'o', color='red')
 
         self.canvas.draw()

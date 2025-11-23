@@ -3,14 +3,14 @@ from tkinter import messagebox
 import threading
 import time
 import re
-from view.main_view import MainPage, KalibracePage, DataPage, FiltracePage
+from view.main_view import MainPage, KalibracePage, DataPage, KalibracniKrivkyPage
 from typing import TYPE_CHECKING
 from controller.kalibrace_controller import KalibraceController
 from model.Zpracovani_model import Zpracovani_model
-from model.Filtrace_model import FiltraceData
+from model.KalibracniKrivky_model import KalibracniKrivkyData
 
 if TYPE_CHECKING:
-    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI, RazitkoGUI, DataGUI, InformaceKalibraceGUI, ExcelGUI, OkolniPodminkyGUI, OriginalFiltraceGUI, FiltraceDatGUI
+    from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI, StavGUI, Typ_protokolGUI, KalibraceGUI, RazitkoGUI, DataGUI, InformaceKalibraceGUI, ExcelGUI, OkolniPodminkyGUI, OriginalDataGUI, FiltraceDatGUI
     from model.Piezo_model import Piezo_model
     from model.MCU_model import MCU_model
     import tkinter as Tk
@@ -30,7 +30,7 @@ class MainController():
 
         self.zpracovani = Zpracovani_model(controller=self)
         self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
-        self.filtrace = FiltraceData(controller = self)
+        # self.filtrace = KalibracniKrivkyData(controller = self)
         
         self.lock_1 = True #odemknuto
         self.lock_pohyb = True
@@ -56,10 +56,10 @@ class MainController():
         self.okolni_podminky : 'OkolniPodminkyGUI' = data_page.okolni_podminky
         self.excel_start : 'ExcelGUI' = data_page.excel_start
         
-    def set_filtrace_page(self, filtrace_page : 'FiltracePage'):
-        self.filtrace_page = filtrace_page
-        self.original_filtrace_gui : 'OriginalFiltraceGUI' = filtrace_page.original_data
-        self.filtrace_data_gui : 'FiltraceDatGUI' = filtrace_page.filtrovane_data
+    def set_KalibracniKrivky_page(self, kalibrancni_krivky_page : 'KalibracniKrivkyPage'):
+        self.kalibracni_krivky_page = kalibrancni_krivky_page
+        #self.kalibrancni_krivky_original_data : 'OriginalDataGUI' = kalibrancni_krivky_page.original_data
+        self.kalibrancni_krivky_filtrace_data : 'FiltraceDatGUI' = kalibrancni_krivky_page.filtrovane_data
         
         
     
@@ -68,7 +68,7 @@ class MainController():
         self.view.add_frame("main", MainPage, self, self.piezo_model, self.mcu_model)
         self.view.add_frame("kalibrace", KalibracePage, self, self.piezo_model, self.mcu_model)
         self.view.add_frame("data", DataPage, self)
-        self.view.add_frame("filtrace", FiltracePage, self)
+        self.view.add_frame("kalibrační křivky", KalibracniKrivkyPage, self)
         #self.view.add_frame("nápověda")
         self.view.show_frame("main")
 
@@ -403,16 +403,23 @@ class MainController():
             
             
             
-    def M_C_vybrat_pracovni_soubor(self):
+    def M_C_vybrat_pracovni_soubor(self, index):
         self.filtrace.nahrat_data()
         
         
     def M_C_vykresli_graf(self):
         if self.filtrace.data_typ == "napětí" or self.filtrace.data_typ == "frekvence":
             print(f"[{self.__class__.__name__}] probiha vykresleni grafu")
-            self.original_filtrace_gui.graf()
+            self.kalibrancni_krivky_original_data.graf()
             
             
             
         else:
             print(f"[{self.__class__.__name__}] nepodporovany typ souboru pro otevreni")
+            
+            
+            
+            
+    def M_C_zmena_poctu_OriginalData(self, pocet):
+            self.kalibracni_krivky_page.update_data(pocet)
+            print(f"[{self.__class__.__name__}] zmena kalibracnich krivek o {pocet}")

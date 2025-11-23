@@ -6,7 +6,7 @@ import pandas as pd
 if TYPE_CHECKING:
     from controller.main_controller import MainController
 
-class FiltraceData():
+class KalibracniKrivkyData():
     def __init__(self, controller : 'MainController'):
         self.controller = controller
         self.data = None
@@ -49,9 +49,15 @@ class FiltraceData():
             return
         
         try:
-            excel_soubor = pd.ExcelFile(self.cesta_soubor)
-            
-            self.data = pd.read_excel(self.cesta_soubor, sheet_name="MD005")
+            excel_soubor = pd.ExcelFile(self.cesta_soubor)    
+            preferovane_listy = ["MD005", "Data"]
+            sheet = next((s for s in preferovane_listy if s in excel_soubor.sheet_names), None)
+
+            if sheet is None:
+                print(f"[{self.__class__.__name__}] Soubor neobsahuje listy MD005 ani Data!")
+                return
+
+            self.data = pd.read_excel(self.cesta_soubor, sheet_name=sheet)
             
             if "Napětí (V)" in self.data.columns:
                 print(f"[{self.__class__.__name__}] TYP DAT NAPETI")
@@ -69,19 +75,21 @@ class FiltraceData():
             print(f"[{self.__class__.__name__}] USPESNE NAHRANY DATA ZE SOBORU !!!")
             
             if self.cesta_soubor:
-                self.controller.original_filtrace_gui.Entry_pracovni_soubor.config(state="normal")
-                self.controller.original_filtrace_gui.Entry_pracovni_soubor.delete(0, "end")
-                self.controller.original_filtrace_gui.Entry_pracovni_soubor.insert(0, f"{self.cesta_soubor}")
-                self.controller.original_filtrace_gui.Entry_pracovni_soubor.config(state="readonly")
+                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.config(state="normal")
+                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.delete(0, "end")
+                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.insert(0, f"{self.cesta_soubor}")
+                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.config(state="readonly")
             
             else:
-                self.controller.original_filtrace_gui.Entry_pracovni_soubor.config(state="normal")
-                self.controller.original_filtrace_gui.Entry_pracovni_soubor.delete(0, "end")
-                self.controller.original_filtrace_gui.Entry_pracovni_soubor.insert(0, f"N/A")
-                self.controller.original_filtrace_gui.Entry_pracovni_soubor.config(state="readonly")
+                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.config(state="normal")
+                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.delete(0, "end")
+                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.insert(0, f"N/A")
+                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.config(state="readonly")
             
-        except:
-            print(f"[{self.__class__.__name__}] CHYBA SE SOUBOREM, EXISTUJE?")
+        except FileNotFoundError:
+            print(f"[{self.__class__.__name__}] Soubor neexistuje!")
+        except Exception as e:
+            print(f"[{self.__class__.__name__}] Chyba pri nacteni souboru: {e}")
             
             
             
@@ -90,16 +98,16 @@ class FiltraceData():
         print(f"[{self.__class__.__name__}] složka {self.pracovni_slozka}")
         
         if self.pracovni_slozka:
-            self.controller.filtrace_data_gui.Entry_pracovni_slozka.config(state="normal")
-            self.controller.filtrace_data_gui.Entry_pracovni_slozka.delete(0, "end")
-            self.controller.filtrace_data_gui.Entry_pracovni_slozka.insert(0, f"{self.pracovni_slozka}")
-            self.controller.filtrace_data_gui.Entry_pracovni_slozka.config(state="readonly")
+            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.config(state="normal")
+            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.delete(0, "end")
+            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.insert(0, f"{self.pracovni_slozka}")
+            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.config(state="readonly")
             
         else:
-            self.controller.filtrace_data_gui.Entry_pracovni_slozka.config(state="normal")
-            self.controller.filtrace_data_gui.Entry_pracovni_slozka.delete(0, "end")
-            self.controller.filtrace_data_gui.Entry_pracovni_slozka.insert(0, f"N/A")
-            self.controller.filtrace_data_gui.Entry_pracovni_slozka.config(state="readonly")
+            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.config(state="normal")
+            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.delete(0, "end")
+            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.insert(0, f"N/A")
+            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.config(state="readonly")
             
             
             
