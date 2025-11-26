@@ -2,6 +2,8 @@
 from typing import TYPE_CHECKING
 from tkinter import filedialog
 import pandas as pd
+import numpy as np
+from scipy.signal import savgol_filter
 
 if TYPE_CHECKING:
     from controller.main_controller import MainController
@@ -10,6 +12,7 @@ class KalibracniKrivkyData():
     def __init__(self, controller : 'MainController'):
         self.controller = controller
         self.data = None
+        self.data_vzorky_poradi = []
         self.data_cas = None
         self.data_x = None
         self.data_y = None
@@ -22,9 +25,16 @@ class KalibracniKrivkyData():
         self.data_jednotka = None
         self.cesta_soubor = None
         self.pracovni_slozka = None
+        self.pocet_vzorku_na_krok = None
+        self.pocet_kroku = None
+        self.pocet_vzorku = None
+        self.blokove_pole = []
+        self.metody_filtrace = ["Průměr", "Medián", "MA", "EMA", "S-G","Průměr+EMA"]
+        self.data_nahrany = False
         
-        self.metody_filtrace = ["Průměr", "Medián", "MA", "EMA", "S-G"]
-        
+        self.data_filtrovane = []
+        self.osa_filtrovane = []
+                
     def priradit_data(self,typ,jednotka):
         self.data_typ = typ
         self.data_jednotka = jednotka
@@ -34,12 +44,16 @@ class KalibracniKrivkyData():
         self.data_tlak = self.data.iloc[:,4]
         self.data_vlhkost = self.data.iloc[:,5]
         self.data_osvetleni = self.data.iloc[:,6]
-        
         cas_series = self.data.iloc[:, 0]
         cas_dt = pd.to_datetime(cas_series, format="%H:%M:%S.%f")
         cas_offset = cas_dt - cas_dt.iloc[0]
         self.data_cas = cas_offset.dt.total_seconds()
-        
+        self.data_vzorky_poradi = list(range(1, len(self.data) + 1))
+        self.vypocitej_pocet_vzorku_na_krok() #ODPOVIDA POCTU VZORKU NA KROK
+        self.vypocitej_pocet_vzorku() #ODPOVIDA POCTU VZORKU V SADE
+        self.vypocitej_pocet_kroku() #ODPOVIDA POCTU KROKU V SADE ..... TYTO INFORMACE BY MELY BYT STEJNE JAKO V MD001
+        self.vytvor_blokove_pole()
+                
         print(f"[{self.__class__.__name__}] DATA PRIRAZENA")
 
         
@@ -70,21 +84,11 @@ class KalibracniKrivkyData():
             #pokud soubor nesedi - vypnout
             else:
                 print(f"[{self.__class__.__name__}] nepodporovany typ dat")
+                self.data_nahrany = False
                 return
             
             print(f"[{self.__class__.__name__}] USPESNE NAHRANY DATA ZE SOBORU !!!")
-            
-            if self.cesta_soubor:
-                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.config(state="normal")
-                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.delete(0, "end")
-                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.insert(0, f"{self.cesta_soubor}")
-                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.config(state="readonly")
-            
-            else:
-                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.config(state="normal")
-                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.delete(0, "end")
-                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.insert(0, f"N/A")
-                self.controller.kalibrancni_krivky_original_data.Entry_pracovni_soubor.config(state="readonly")
+            self.data_nahrany = True
             
         except FileNotFoundError:
             print(f"[{self.__class__.__name__}] Soubor neexistuje!")
@@ -97,25 +101,101 @@ class KalibracniKrivkyData():
         self.pracovni_slozka = filedialog.askdirectory(title="Pracovní složka")
         print(f"[{self.__class__.__name__}] složka {self.pracovni_slozka}")
         
-        if self.pracovni_slozka:
-            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.config(state="normal")
-            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.delete(0, "end")
-            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.insert(0, f"{self.pracovni_slozka}")
-            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.config(state="readonly")
-            
-        else:
-            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.config(state="normal")
-            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.delete(0, "end")
-            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.insert(0, f"N/A")
-            self.controller.kalibrancni_krivky_filtrace_data.Entry_pracovni_slozka.config(state="readonly")
-            
-            
-            
-            
+    def vypocitej_pocet_kroku(self):
+        if (self.pocet_vzorku or self.pocet_vzorku_na_krok) is None:
+            return
+        
+        self.pocet_kroku = self.pocet_vzorku / self.pocet_vzorku_na_krok # JE O 1 VYSSI NEZ V MD001 PROTOZE SE MERI I POLOHA 0
+        print(f"[{self.__class__.__name__}] Pocet kroku = {self.pocet_kroku}")
     
+    def vypocitej_pocet_vzorku_na_krok(self):
+        if self.data_x is None:
+            return
+        
+        self.pocet_vzorku_na_krok = (self.data_x == self.data_x.iloc[0]).cumprod().sum()
+        print(f"[{self.__class__.__name__}] Pocet vzorku na krok = {self.pocet_vzorku_na_krok}")
+    
+    def vypocitej_pocet_vzorku(self):
+        if self.data_vzorky_poradi is None:
+            return
+        
+        self.pocet_vzorku = len(self.data_vzorky_poradi)
+        print(f"[{self.__class__.__name__}] Pocet vzorku = {self.pocet_vzorku}")
+        
+    def vytvor_blokove_pole(self):
+        if self.data_x is None:
+            return
+
+        self.blokove_hodnoty = self.data_x[self.data_x.ne(self.data_x.shift()).fillna(True)].to_list()
+        print(f"[{self.__class__.__name__}] Blokove hodnoty : {self.blokove_hodnoty}")
+    
+    
+    def filtrovani_prumer(self):
+        self.data_filtrovane = []
+        pocet_kroku = int(self.pocet_kroku)
+        pocet_vzorku_na_krok = int(self.pocet_vzorku_na_krok)
+
+        for i in range(pocet_kroku):
+            start = i * pocet_vzorku_na_krok
+            end = start + pocet_vzorku_na_krok
+            blok = self.data_y[start:end]
+            prumer = blok.mean()
+            self.data_filtrovane.append(round(prumer,1))
+
+        #uprava filtrovane osy
+        self.osa_filtrovane = []
+        self.osa_filtrovane = self.blokove_hodnoty
+        print(f"[{self.__class__.__name__}] filtrovane (prumer): {self.data_filtrovane}")
+        
+    def filtrovani_median(self):
+        self.data_filtrovane = []
+        pocet_kroku = int(self.pocet_kroku)
+        pocet_vzorku_na_krok = int(self.pocet_vzorku_na_krok)
+
+        for i in range(pocet_kroku):
+            start = i * pocet_vzorku_na_krok
+            end = start + pocet_vzorku_na_krok
+
+            blok = self.data_y[start:end]
+            median = blok.median()  
+            self.data_filtrovane.append(round(median, 1))
+
+        #uprava filtrovane osy
+        self.osa_filtrovane = []
+        self.osa_filtrovane = self.blokove_hodnoty
+        print(f"[{self.__class__.__name__}] filtrovane (median): {self.data_filtrovane}")
+        
+    def filtrovani_MA(self, okno=20):
+        self.data_filtrovane=[]
+        self.data_filtrovane = self.data_y.rolling(window=okno, min_periods=1).mean()
+        self.data_filtrovane = self.data_filtrovane.round(1).tolist()
+        self.osa_filtrovane = []
+        self.osa_filtrovane = self.data_x
+        print(f"[{self.__class__.__name__}] filtrovane (MA): {self.data_filtrovane}")
         
         
+    def filtrovani_EMA(self, okno = 20):
+        self.data_filtrovane=[]
+        self.data_filtrovane = self.data_y.ewm(span=okno, adjust=False).mean().round(1).tolist()
+        self.osa_filtrovane = []
+        self.osa_filtrovane = self.data_x
+        print(f"[{self.__class__.__name__}] filtrovane (EMA): {self.data_filtrovane}")
         
-            
-            
-         
+    def filtrovani_SG(self, okno=11, poly=2):
+        if self.data_y is None:
+            return
+
+        filtrovane = savgol_filter(self.data_y, window_length=okno, polyorder=poly)
+
+        self.data_filtrovane = filtrovane.round(1).tolist()
+        self.osa_filtrovane = self.data_x[:len(self.data_filtrovane)]
+
+        print(f"[{self.__class__.__name__}] filtrovane (S-G): {self.data_filtrovane}")
+        
+    def filtrovani_prumer_EMA(self, okno = 10):
+        
+        self.filtrovani_prumer()
+        self.data_filtrovane = pd.Series(self.data_filtrovane).ewm(span=okno, adjust=False).mean().round(1).tolist()
+        print(f"[{self.__class__.__name__}] filtrovane (prumer+EMA): {self.data_filtrovane}")
+        
+        

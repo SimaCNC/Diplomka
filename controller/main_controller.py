@@ -31,6 +31,7 @@ class MainController():
         self.zpracovani = Zpracovani_model(controller=self)
         self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
         # self.filtrace = KalibracniKrivkyData(controller = self)
+        self.filtrace : 'KalibracniKrivkyData' = []
         
         self.lock_1 = True #odemknuto
         self.lock_pohyb = True
@@ -59,7 +60,7 @@ class MainController():
     def set_KalibracniKrivky_page(self, kalibrancni_krivky_page : 'KalibracniKrivkyPage'):
         self.kalibracni_krivky_page = kalibrancni_krivky_page
         #self.kalibrancni_krivky_original_data : 'OriginalDataGUI' = kalibrancni_krivky_page.original_data
-        self.kalibrancni_krivky_filtrace_data : 'FiltraceDatGUI' = kalibrancni_krivky_page.filtrovane_data
+        # self.kalibrancni_krivky_filtrace_data : 'FiltraceDatGUI' = kalibrancni_krivky_page.filtrovane_data
         
         
     
@@ -402,24 +403,77 @@ class MainController():
             print(f"{self.__class__.__name__} NEUCELENA DATA !!!! NELZE NAHRAT !!")
             
             
-            
     def M_C_vybrat_pracovni_soubor(self, index):
-        self.filtrace.nahrat_data()
+        instance_gui = self.kalibracni_krivky_page.original_data_instance[index]
+        instance_gui.data.nahrat_data()
         
+        #pokud je uspesne nahrany soubor, lze filtrovat
+        if instance_gui.data.data_nahrany:
+            instance_gui.soubor_vybrany = True
+        else:
+            instance_gui.soubor_vybrany = False
         
-    def M_C_vykresli_graf(self):
-        if self.filtrace.data_typ == "napětí" or self.filtrace.data_typ == "frekvence":
+        instance_gui.Entry_pracovni_soubor.config(state="normal")
+        instance_gui.Entry_pracovni_soubor.delete(0, "end")
+        instance_gui.Entry_pracovni_soubor.insert(0, instance_gui.data.cesta_soubor or "N/A")
+        instance_gui.Entry_pracovni_soubor.config(state="readonly")
+        
+    def M_C_vykresli_graf(self, index):
+        instance_gui = self.kalibracni_krivky_page.original_data_instance[index]
+        data = instance_gui.data
+        
+        if data.data_typ in ("napětí", "frekvence"):
             print(f"[{self.__class__.__name__}] probiha vykresleni grafu")
-            self.kalibrancni_krivky_original_data.graf()
-            
-            
-            
+            instance_gui.graf()
         else:
             print(f"[{self.__class__.__name__}] nepodporovany typ souboru pro otevreni")
-            
-            
-            
             
     def M_C_zmena_poctu_OriginalData(self, pocet):
             self.kalibracni_krivky_page.update_data(pocet)
             print(f"[{self.__class__.__name__}] zmena kalibracnich krivek o {pocet}")
+            
+    def M_C_vykresli_graf_filtrace(self, index, typ):
+        instance = self.kalibracni_krivky_page.original_data_instance[index]
+        data = instance.data
+        
+        if instance.soubor_vybrany == False: #pokud soubor nebyl vybrany, nelze filtrovat
+            return        
+        else:
+            if typ == "Průměr":
+                data.filtrovani_prumer()
+                instance.graf_filtrovany_prumer_median()
+                print(f"[{self.__class__.__name__}] FILTRACE PRUMER")
+
+            elif typ == "Medián":
+                data.filtrovani_median()
+                instance.graf_filtrovany_prumer_median()
+                print(f"[{self.__class__.__name__}] FILTRACE MEDIAN")
+                
+            elif typ == "MA":
+                data.filtrovani_MA()
+                instance.graf_filtrovany_prumer_median()
+                print(f"[{self.__class__.__name__}] FILTRACE MA")
+                
+            elif typ == "EMA":
+                data.filtrovani_EMA()
+                instance.graf_filtrovany_prumer_median()
+                print(f"[{self.__class__.__name__}] FILTRACE EMA")
+                
+            elif typ == "S-G":
+                data.filtrovani_SG()
+                instance.graf_filtrovany_prumer_median()
+                print(f"[{self.__class__.__name__}] FILTRACE SG")    
+                
+            elif typ == "Průměr+EMA":
+                data.filtrovani_prumer_EMA()
+                instance.graf_filtrovany_prumer_median()
+                print(f"[{self.__class__.__name__}] FILTRACE PRUMER+EMA")    
+                
+                
+            else:
+                print(f"[{self.__class__.__name__}] ZATIM NEPODPOROVANE")
+        
+        
+        
+        
+        
