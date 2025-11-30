@@ -140,7 +140,7 @@ class KalibracniKrivkyData():
             end = start + pocet_vzorku_na_krok
             blok = self.data_y[start:end]
             prumer = blok.mean()
-            self.data_filtrovane.append(round(prumer,1))
+            self.data_filtrovane.append(round(prumer,6))
 
         #uprava filtrovane osy
         self.osa_filtrovane = []
@@ -158,7 +158,7 @@ class KalibracniKrivkyData():
 
             blok = self.data_y[start:end]
             median = blok.median()  
-            self.data_filtrovane.append(round(median, 1))
+            self.data_filtrovane.append(round(median, 6))
 
         #uprava filtrovane osy
         self.osa_filtrovane = []
@@ -168,7 +168,7 @@ class KalibracniKrivkyData():
     def filtrovani_MA(self, okno=20):
         self.data_filtrovane=[]
         self.data_filtrovane = self.data_y.rolling(window=okno, min_periods=1).mean()
-        self.data_filtrovane = self.data_filtrovane.round(1).tolist()
+        self.data_filtrovane = self.data_filtrovane.round(6).tolist()
         self.osa_filtrovane = []
         self.osa_filtrovane = self.data_x
         print(f"[{self.__class__.__name__}] filtrovane (MA): {self.data_filtrovane}")
@@ -176,7 +176,7 @@ class KalibracniKrivkyData():
         
     def filtrovani_EMA(self, okno = 20):
         self.data_filtrovane=[]
-        self.data_filtrovane = self.data_y.ewm(span=okno, adjust=False).mean().round(1).tolist()
+        self.data_filtrovane = self.data_y.ewm(span=okno, adjust=False).mean().round(6).tolist()
         self.osa_filtrovane = []
         self.osa_filtrovane = self.data_x
         print(f"[{self.__class__.__name__}] filtrovane (EMA): {self.data_filtrovane}")
@@ -187,7 +187,7 @@ class KalibracniKrivkyData():
 
         filtrovane = savgol_filter(self.data_y, window_length=okno, polyorder=poly)
 
-        self.data_filtrovane = filtrovane.round(1).tolist()
+        self.data_filtrovane = filtrovane.round(6).tolist()
         self.osa_filtrovane = self.data_x[:len(self.data_filtrovane)]
 
         print(f"[{self.__class__.__name__}] filtrovane (S-G): {self.data_filtrovane}")
@@ -195,7 +195,7 @@ class KalibracniKrivkyData():
     def filtrovani_prumer_EMA(self, okno = 10):
         
         self.filtrovani_prumer()
-        self.data_filtrovane = pd.Series(self.data_filtrovane).ewm(span=okno, adjust=False).mean().round(1).tolist()
+        self.data_filtrovane = pd.Series(self.data_filtrovane).ewm(span=okno, adjust=False).mean().round(6).tolist()
         print(f"[{self.__class__.__name__}] filtrovane (prumer+EMA): {self.data_filtrovane}")
         
         

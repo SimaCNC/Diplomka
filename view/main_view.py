@@ -910,12 +910,7 @@ class ExcelGUI(LabelFrame):
         implementovani filtrace na kalibracni krivky, uz to neni moc podle MVC
         - GUI je primo napojene na model, protoze se vytvari vice instanci
         """
-
-
-
-
-
-        
+    
 #TRIDA PRO SPRAVOVANI KALIBRACNICH KRIVEK        
 class KalibracniKrivkyPage(ScrollableFrame):
     def __init__(self, parent, controller : 'MainController'):
@@ -924,14 +919,11 @@ class KalibracniKrivkyPage(ScrollableFrame):
         self.controler = controller
         self.original_data_instance = []
         self.instance_pocet = 0
-        
         self.original_data_pocet : LabelFrame = OriginalDataPocet(self.scrollable_frame, self.controler)
         self.original_data_pocet.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
         
-        self.update_data(1)    
-        
+        self.update_data(1)           
         self.controler.set_KalibracniKrivky_page(self)
-        
         
     def update_data(self, inkrement):
         if not (1 <= self.instance_pocet + inkrement <= 10):
