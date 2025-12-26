@@ -3,7 +3,7 @@ from tkinter import messagebox
 import threading
 import time
 import re
-from view.main_view import MainPage, KalibracePage, DataPage, KalibracniKrivkyPage
+from view.main_view import MainPage, OvladaniPage, KalibracePage, DataPage, KalibracniKrivkyPage
 from typing import TYPE_CHECKING
 from controller.kalibrace_controller import KalibraceController
 from model.Zpracovani_model import Zpracovani_model
@@ -40,8 +40,11 @@ class MainController():
     def set_main_page(self, main_page : 'MainPage'):
         self.main_page = main_page
         self.com : 'ComGUI' = main_page.com_gui
-        self.piezo_gui : 'PiezoGUI' = main_page.piezo_gui
-        self.mcu_gui : 'McuGUI'= main_page.mcu_gui 
+        
+    def set_ovladani_page(self, ovladani_page : 'OvladaniPage'):
+        self.set_ovladani_page = ovladani_page
+        self.piezo_gui : 'PiezoGUI' = ovladani_page.piezo_gui
+        self.mcu_gui : 'McuGUI'= ovladani_page.mcu_gui 
     
     def set_kalibrace_page(self, kalibrace_page : 'KalibracePage'):
         self.kalibrace_page = kalibrace_page
@@ -67,6 +70,7 @@ class MainController():
 #Vytvoreni pohledu a definovani prvniho okna - Pripojeni = main      
     def setup_gui(self):
         self.view.add_frame("main", MainPage, self, self.piezo_model, self.mcu_model)
+        self.view.add_frame("ovladani", OvladaniPage, self, self.piezo_model, self.mcu_model)
         self.view.add_frame("kalibrace", KalibracePage, self, self.piezo_model, self.mcu_model)
         self.view.add_frame("data", DataPage, self)
         self.view.add_frame("kalibrační křivky", KalibracniKrivkyPage, self)
@@ -272,10 +276,11 @@ class MainController():
             def callback_po_odpovedi_piezo():
                 self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu) #aktualni pozice po zastaveni
             self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
+            return 1
             
         else:
             self.M_C_enable_piezo_buttons()
-
+            return 0
 
     def M_C_pohyb_piezo(self, smer):
         self.lock_pohyb = False

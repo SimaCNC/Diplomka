@@ -45,6 +45,7 @@ class RootGUI():
         #vytvoreni menu
         self.menu = Menu(self.root)
         self.menu.add_command(label="Připojení", command=lambda: self.show_frame("main"))      
+        self.menu.add_command(label="Ovládání", command=lambda: self.show_frame("ovladani"))
         self.menu.add_command(label="Kalibrace", command=lambda: self.show_frame("kalibrace"))
         self.menu.add_command(label="Data", command=lambda : self.show_frame("data"))
         self.menu.add_command(label="Kalibrační křivky", command=lambda : self.show_frame("kalibrační křivky"))
@@ -142,12 +143,6 @@ class MainPage(ScrollableFrame):
 
         self.com_gui : LabelFrame = ComGUI(self.scrollable_frame, controller, piezo_model, mcu_model)
         self.com_gui.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
-        
-        self.piezo_gui : LabelFrame = PiezoGUI(self.scrollable_frame, controller, piezo_model)
-        self.piezo_gui.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
-        
-        self.mcu_gui : LabelFrame = McuGUI(self.scrollable_frame, controller, mcu_model)
-        self.mcu_gui.grid(row=1, column=1, padx=5, pady=5, sticky="nw")
         
         self.controler = controller
         self.controler.set_main_page(self)
@@ -262,6 +257,19 @@ class ComGUI(LabelFrame):
             self.btn_connect_MCU["state"] = "active"
             print("Pripojeni k MCU aktivni")    
  
+class OvladaniPage(ScrollableFrame):
+    def __init__(self, parent, controller : 'MainController', piezo_model, mcu_model):
+        super().__init__(parent)
+        self.config(bg="white")    
+
+        self.piezo_gui : LabelFrame = PiezoGUI(self.scrollable_frame, controller, piezo_model)
+        self.piezo_gui.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
+        
+        self.mcu_gui : LabelFrame = McuGUI(self.scrollable_frame, controller, mcu_model)
+        self.mcu_gui.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
+        
+        self.controler = controller
+        self.controler.set_ovladani_page(self)
     
 #SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY - LEVE HORNI OKNO APLIKACE, trida ComGui()         
 class PiezoGUI(LabelFrame):

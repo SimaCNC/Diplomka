@@ -77,7 +77,15 @@ class KalibracniOkno(Toplevel):
             if self.controller.piezo_model.prostor == False:
                 self.window_exit()
                 return
-            
+        
+        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze":
+            self.controller.kalibrace.kalibrace_start_pulzy_hystereze()
+            self.controller.blok_widgets(self.controller.root)
+            if self.controller.piezo_model.prostor == False:
+                self.window_exit()
+                return  
+          
+        #PROTOKOL    
         elif self.controller.protokol_gui.vybrane_var.get() == "3" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
             print(f"[{self.__class__.__name__}] TATO VOLBA NEEXISTUJE, NONE")
             pass
@@ -103,6 +111,12 @@ class KalibracniOkno(Toplevel):
             self.ax.set_xlabel("Vzdálenost (um)")
             self.ax.set_ylabel("Frekvence (Hz)")
             print(f"[{self.__class__.__name__}] vybraná frekvence")
+            
+        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze":
+            self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače - hystereze")
+            self.ax.set_xlabel("Vzdálenost (um)")
+            self.ax.set_ylabel("Frekvence (Hz)")
+            print(f"[{self.__class__.__name__}] vybraná frekvence")
         #POPISKY GRAFU
             
         #canvas pro vlozeni matplotlib do tkinter okna
@@ -114,7 +128,9 @@ class KalibracniOkno(Toplevel):
         if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
             self.after(500, self.aktualizace_graf_ad)
         
-        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+        elif self.controller.protokol_gui.vybrane_var.get() == "2" and (self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná" or
+                                                                        self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze"):
+                                                                        
             self.after(500, self.aktualizace_graf_frekvence)
         #SPUSTENI FUNKCE ZA 500ms SE FUNKCE PRO AKTUALIZACI GRAFU
         
