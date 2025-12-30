@@ -24,8 +24,8 @@ class RootGUI():
     def __init__(self):
         self.root : Tk = Tk()
         
-        self.root.iconbitmap('icon/logo_uprava2.ico')
-        self.root.title("Kalibrace snímače malých posunutí")
+        self.root.iconbitmap('template/icon/logo.ico')
+        self.root.title("Kalibrace snímačů malých posunutí")
         self.root.geometry("1250x800")
         self.root.config(bg="white")
         

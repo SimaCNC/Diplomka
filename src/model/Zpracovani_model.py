@@ -128,7 +128,7 @@ class Zpracovani_model():
     def vytvorit_excel(self):
         #nacteni template - ORIGINALNI TEMPLATE - ZKOPIROVANI
         try:
-            shutil.copy("Datasheet_senzor_template.xlsx", "vyhodnoceni.xlsx")
+            shutil.copy("template/Datasheet_senzor_template.xlsx", "vyhodnoceni.xlsx")
         except PermissionError:
             InfoMsg = f"[{self.__class__.__name__}] EXCEL SOUBOR JE JIŽ OTEVŘENÝ"
             messagebox.showerror("Excel", InfoMsg)
