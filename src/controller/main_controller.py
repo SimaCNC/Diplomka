@@ -27,7 +27,6 @@ class MainController():
         self.main_page = None
         self.kalibrace_finish = False
         
-
         self.zpracovani = Zpracovani_model(controller=self)
         self.kalibrace = KalibraceController(controller=self, piezo_model=piezo_model, mcu_model=mcu_model)
         # self.filtrace = KalibracniKrivkyData(controller = self)
@@ -62,11 +61,7 @@ class MainController():
         
     def set_KalibracniKrivky_page(self, kalibrancni_krivky_page : 'KalibracniKrivkyPage'):
         self.kalibracni_krivky_page = kalibrancni_krivky_page
-        #self.kalibrancni_krivky_original_data : 'OriginalDataGUI' = kalibrancni_krivky_page.original_data
-        # self.kalibrancni_krivky_filtrace_data : 'FiltraceDatGUI' = kalibrancni_krivky_page.filtrovane_data
         
-        
-    
 #Vytvoreni pohledu a definovani prvniho okna - Pripojeni = main      
     def setup_gui(self):
         self.view.add_frame("main", MainPage, self, self.piezo_model, self.mcu_model)
@@ -171,8 +166,6 @@ class MainController():
             self.kalibrace.kalibrace == False #kalibrace zakazana
             self.piezo_model.prostor == False #prostor neni volny
             
-    
-    
     def M_C_odpoved_wait(self, send, expect, callback_fun = None):
         send = send
         expect = expect
@@ -354,9 +347,6 @@ class MainController():
         
         print(f"[M_C_aktualizace_stav]: aktualizace stavu")
         
-    
-        
-        
 #DATA PAGE
 
     def M_C_posledni_kalibrace_nahrat_data(self):
@@ -379,7 +369,6 @@ class MainController():
             messagebox.showerror("Neucelená data", InfoMsg)
             print(f"{self.__class__.__name__} NEUCELENA DATA !!!! NELZE NAHRAT !!")
             
-    
     def M_C_excel_start(self):
         if self.kalibrace_finish == True:
             #PRIRAZENI HODNOT Z ENTRY VSTUPU
@@ -403,12 +392,7 @@ class MainController():
             self.zpracovani.snimany_material = str(self.informace_kalibrace.entry_snimany_material.get())
             self.zpracovani.obvod_zpracovani = str(self.informace_kalibrace.entry_obvod_zpracovani.get())
             self.zpracovani.napajeni_snimace = str(self.informace_kalibrace.entry_napajeni.get())
-
-            #Okolni podminky mereni
-            
-            
-            
-            
+       
             self.zpracovani.vytvorit_excel()
             return
             
@@ -417,7 +401,6 @@ class MainController():
             InfoMsg = f"Data nejsou ucelená, nutno provést kalibraci"
             messagebox.showerror("Neucelená data", InfoMsg)
             print(f"{self.__class__.__name__} NEUCELENA DATA !!!! NELZE NAHRAT !!")
-            
             
     def M_C_vybrat_pracovni_soubor(self, index):
         instance_gui = self.kalibracni_krivky_page.original_data_instance[index]
@@ -485,11 +468,5 @@ class MainController():
                 instance.graf_filtrovany_prumer_median()
                 print(f"[{self.__class__.__name__}] FILTRACE PRUMER+EMA")    
                 
-                
             else:
-                print(f"[{self.__class__.__name__}] ZATIM NEPODPOROVANE")
-        
-        
-        
-        
-        
+                print(f"[{self.__class__.__name__}] ZATIM NEPODPOROVANE")     

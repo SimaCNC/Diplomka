@@ -32,7 +32,6 @@ class Zpracovani_model():
         self.df = pd.DataFrame()
         self.summary_df = pd.DataFrame()
     
-        
         #Data excel
         #Razitko #spolecne pro vsechny datasheety
         self.nazev = None
@@ -118,7 +117,6 @@ class Zpracovani_model():
         self.pocet_kroku = str(self.kalibrace_df["pocet_kroku"].iloc[0])
         self.pocet_vzorku = str(self.kalibrace_df["pocet_vzorku_na_krok"].iloc[0])
         
-        
         #Okolni podminky mereni
         self.teplota = round(float(self.summary_df["teplota_prumer"].mean()), 1)
         self.tlak = round(float(self.summary_df["tlak_prumer"].mean()), 1)
@@ -171,7 +169,6 @@ class Zpracovani_model():
         self.sheet[self.pocet_kroku_pozice] = str(self.pocet_kroku)
         self.sheet[self.pocet_vzorku_pozice] = str(self.pocet_vzorku)
         
-        
         #priprazeni do excelu - okolni podminky mereni
         self.sheet[self.teplota_pozice] = str(self.teplota)
         self.sheet[self.tlak_pozice] = str(self.tlak)
@@ -198,8 +195,6 @@ class Zpracovani_model():
         img.anchor = "C7"
         self.sheet.add_image(img)
         
-        
-        
         #ulozeni do pracovni slozky
         datum = datetime.now().strftime("%Y-%m-%d")
         poradi = 0
@@ -213,8 +208,6 @@ class Zpracovani_model():
                 jmeno_souboru = f"vyhodnoceni_{datum}_{poradi:03}.xlsx"
             else:
                 je_v_adresari = False
-        
-        
         
         pracovni_slozka = os.path.join(self.controller.kalibrace.pracovni_slozka, jmeno_souboru)
         wb.save(pracovni_slozka)
@@ -236,12 +229,6 @@ class Zpracovani_model():
         else:
            print(f"[{self.__class__.__name__}]PDF soubor nebyl nalezen!")
         
-        
-        
-        
-        
-        
-        
     def vytvorit_pdf(self, xlsx_cesta, pdf_cesta, sheets):
         if os.path.exists(pdf_cesta):
             os.remove(pdf_cesta)
@@ -262,42 +249,3 @@ class Zpracovani_model():
         time.sleep(5)
         wb.Close(False)
         excel.Quit()
-        
-        # # wb_com = excel.Workbooks.Open(xlsx_cesta)
-
-        
-        # # wb_com.Sheets(sheets[0]).Select()
-        # # for s in sheets[1:]:
-        # #     wb_com.Sheets(s).Select(False)
-
-        # # wb_com.ActiveWindow.SelectedSheets.ExportAsFixedFormat(0, pdf_cesta)
-
-        # # wb_com.Close(False)
-        # # excel.Quit()
-        # del excel
-        # if os.path.exists(pdf_cesta):
-        #     os.remove(pdf_cesta)
-
-        # excel = win32.Dispatch("Excel.Application")
-        # excel.Visible = False
-        # excel.DisplayAlerts = False
-
-        # wb_com = excel.Workbooks.Open(xlsx_cesta)
-
-        # # Vyber listů k exportu
-        # for i, sheet_name in enumerate(sheets):
-        #     if i == 0:
-        #         wb_com.Sheets(sheet_name).Select()
-        #     else:
-        #         wb_com.Sheets(sheet_name).Select(False)
-
-        # wb_com.ExportAsFixedFormat(0, pdf_cesta)
-
-        # wb_com.Close(False)
-        # excel.Quit()
-        # del excel
-        
-        
-        
-        
-        

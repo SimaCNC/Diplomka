@@ -56,7 +56,6 @@ class KalibracniKrivkyData():
                 
         print(f"[{self.__class__.__name__}] DATA PRIRAZENA")
 
-        
     def nahrat_data(self):
         self.cesta_soubor = filedialog.askopenfilename(title="Data pro filtraci", filetypes=[("Excel files", "*.xlsx *.xls")])
         if not self.cesta_soubor:
@@ -94,8 +93,6 @@ class KalibracniKrivkyData():
             print(f"[{self.__class__.__name__}] Soubor neexistuje!")
         except Exception as e:
             print(f"[{self.__class__.__name__}] Chyba pri nacteni souboru: {e}")
-            
-            
             
     def vybrat_pracovni_slozku(self):
         self.pracovni_slozka = filedialog.askdirectory(title="Pracovní složka")
@@ -173,7 +170,6 @@ class KalibracniKrivkyData():
         self.osa_filtrovane = self.data_x
         print(f"[{self.__class__.__name__}] filtrovane (MA): {self.data_filtrovane}")
         
-        
     def filtrovani_EMA(self, okno = 20):
         self.data_filtrovane=[]
         self.data_filtrovane = self.data_y.ewm(span=okno, adjust=False).mean().round(6).tolist()
@@ -196,6 +192,4 @@ class KalibracniKrivkyData():
         
         self.filtrovani_prumer()
         self.data_filtrovane = pd.Series(self.data_filtrovane).ewm(span=okno, adjust=False).mean().round(6).tolist()
-        print(f"[{self.__class__.__name__}] filtrovane (prumer+EMA): {self.data_filtrovane}")
-        
-        
+        print(f"[{self.__class__.__name__}] filtrovane (prumer+EMA): {self.data_filtrovane}") 

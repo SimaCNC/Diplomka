@@ -44,7 +44,6 @@ class SerialCtrl():
         else:
             print(f"Port nebyl otevren, nelze zavrit")
             
-            
     # METODY PRO POSILANI a PRIJEM DAT - PIEZO
     def send_msg_simple(self, msg : str):
         print(f"[SerialCtrl]: odeslana zprava: {msg}")
@@ -53,10 +52,6 @@ class SerialCtrl():
     def get_msg_simple(self, callback = None): #CALLBACK JE FUNKCE, KTERA JE VLOZENA JAKO ARGUMENT - FLEXIBILNI POUZITI FUNKCE get_msg_simple!!
         try:
             data = None
-            
-            # #vycisteni bufferu
-            # while self.ser.in_waiting > 0:
-            #     data = self.ser.readline().decode().strip()
             data = self.ser.readline().decode().strip() 
                 
             if data:
@@ -99,6 +94,4 @@ class SerialCtrl():
                 else:
                     continue
         except Exception as e:
-            print(f"chyba: {e}")
-            
-                   
+            print(f"chyba: {e}")            

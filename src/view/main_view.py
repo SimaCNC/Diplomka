@@ -81,7 +81,6 @@ class RootGUI():
 #-----------------------------------------------------     
 #TRIDA PRO VYTVORENI SCROLLOVACICH OKEN - FRAME
 #----------------------------------------------------- 
-
 class ScrollableFrame(Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -135,7 +134,6 @@ class ScrollableFrame(Frame):
 #SPRAVOVANI PRIPOJENI K SERIOVYM KOMUNIKACIM PRO MCU A PIEZOPOHONY 
 #OVLADANI PRO UMISTENI SENZORU   
 #------------------------------------------------------------------------- 
-
 class MainPage(ScrollableFrame):
     def __init__(self, parent, controller : 'MainController', piezo_model, mcu_model):
         super().__init__(parent)
@@ -509,10 +507,7 @@ class McuGUI(LabelFrame):
             widget.config(state="normal")       
         for child in widget.winfo_children():
             self.enable_children(child)
-  
-  
-  
-               
+          
 #------------------------------        
 #KALIBRACE PAGE    
 #------------------------------           
@@ -636,17 +631,9 @@ class KalibraceGUI(LabelFrame):
         self.BTN_pocet_vzorku = Button(self, text="Potvrdit", width=18, command= lambda: self.controller.kalibrace.nastavit_vzorky(self.entry_pocet_vzorku.get()))
         self.controller.kalibrace.nastavit_vzorky(self.entry_pocet_vzorku.get())
         
-        # self.zaznam_teplota = Label(self, text="Záznam teploty :", bg="white", width=20, anchor="w")
-        # self.regulace_var = StringVar(self, value="0")
-        # self.RB_teplota0 = Radiobutton(self, text="Bez teploty", variable=self.regulace_var, value="0", bg="white", command=None, width=20, anchor="w")
-        # self.RB_teplota1 = Radiobutton(self, text="Záznam teploty", variable=self.regulace_var, value="1", bg="white", command=None, width=20, anchor="w")
-        
-        # self.label_odhad_cas = Label(self, text="Odhadovaný čas kalibrace :", bg="white", width=20, anchor="w")
         self.label_kalibraceStart = Label(self, text="Start kalibrace :", bg="white", width=20, anchor="e")
         self.BTN_kalibraceStart = Button(self, text="START", width=18, state="active", command= self.BTN_kalibraceStart_nastavit)
-        
-        
-        
+         
         self.publish()
         
     def BTN_kalibraceStart_nastavit(self):
@@ -675,12 +662,7 @@ class KalibraceGUI(LabelFrame):
         self.label_pocet_vzorku.grid(row=4, column=0, padx=5, pady=5)
         self.entry_pocet_vzorku.grid(row=4, column=1, padx=5, pady=5, sticky="w")
         self.BTN_pocet_vzorku.grid(row=4, column=2, padx=5, pady=5, sticky="w")  
-    
-        # self.zaznam_teplota.grid(row=5, column=0, padx=5, pady=5)
-        # self.RB_teplota0.grid(row=5, column=1, padx=5, pady=5, sticky="w")
-        # self.RB_teplota1.grid(row=5, column=2, padx=5, pady=5, sticky="w")
-        # self.label_odhad_cas.grid(row=4, column=0, padx=5, pady=5)
-        
+
         self.label_kalibraceStart.grid(row=6, column=1, padx=5, pady=5, sticky="e")
         self.BTN_kalibraceStart.grid(row=6, column=2, padx=5, pady=5, sticky="w")
     
@@ -710,16 +692,6 @@ class KalibraceGUI(LabelFrame):
         else:
             InfoMsg = f"CHYBA\nNesplněny podmínky zapnutí kalibrace"
             messagebox.showinfo("Chyba", InfoMsg)
-            # print(f"[KalibraceGUI] vytvoreni okna noveho")
-            # self.okno_nove_kalibrace = KalibracniOkno(self.controller.view.root, self)
-            # self.BTN_kalibraceStart.config(state="disabled")
-
-if __name__ == "__main__":
-    print("TOTO NENI HLAVNI APLIKACE")
-    print("HLAVNI APLIKACE JE V SOUBORU main.py")
-
-
-
 
 #------------------------------        
 #DATA PAGE 
@@ -746,8 +718,7 @@ class DataPage(ScrollableFrame):
         self.excel_start.grid(row=0, column=4, padx=5, pady=5, sticky="nw")
         
         self.controler = controller
-        self.controler.set_data_page(self)      
-                  
+        self.controler.set_data_page(self)                
                   
 class DataGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController'):
@@ -761,12 +732,6 @@ class DataGUI(LabelFrame):
         self.BTN_soubor_mereni_data = Button(self, text="Data ze souboru", width=18, state="active", command= lambda:1)
         self.BTN_soubor_mereni_data.grid(row=1, column=0, padx=5, pady=5, sticky="NE")
                   
-#USER STORY RaztikoGUI
-        """chci otevrit data, vlozit informace do razitka chci nahrat data zmerena z kalibrace - posledni nebo z excel souboru
-        potom chci videt jake hodnoty jsem nameril a nakonec chci dat excelstart aby se mi vytvoril kalibracni
-        list a rovnou i PDF soubory treba do nove slozky. takze se vytvori slozka s cislem projektu, tam se ulozi
-        excel vzorky, excel vyhodnoceni, PDF soubory - MD001-MD00X
-        """
 class RazitkoGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController'):
         super().__init__(parent, text="Razítko", padx=5, pady=5, bg="white",bd=5, relief="groove")
@@ -896,29 +861,15 @@ class OkolniPodminkyGUI(LabelFrame):
         self.label_osvetleni.grid(row=3, column=0, padx=5, pady=5, sticky="NE")
         self.entry_osvetleni.grid(row=3, column=1, padx=5, pady=5, sticky="NE")
         
-
 class ExcelGUI(LabelFrame):
     def __init__(self, parent, controller : 'MainController'):
         super().__init__(parent, text="Excel", padx=5, pady=5, bg="white",bd=5, relief="groove")
         self.controller = controller
         
-        
         self.BTN_excelstart = Button(self, text="Excel start", width=18, state="active", command= lambda: self.controller.M_C_excel_start())
         self.BTN_excelstart.grid(row=0, column=0, padx=5, pady=5, sticky="NE") 
         
-        
 
-
-
-
-
-
-## KALIBRACNI KRIVKY
-        """
-        implementovani filtrace na kalibracni krivky, uz to neni moc podle MVC
-        - GUI je primo napojene na model, protoze se vytvari vice instanci
-        """
-    
 #TRIDA PRO SPRAVOVANI KALIBRACNICH KRIVEK        
 class KalibracniKrivkyPage(ScrollableFrame):
     def __init__(self, parent, controller : 'MainController'):
@@ -975,7 +926,6 @@ class OriginalDataPocet(LabelFrame):
         self.label_data_pocet.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
         self.BTN_original_data_pridat.grid(row=0, column=1, padx=5, pady=5, sticky="nw")
         self.BTN_original_data_odebrat.grid(row=0, column=2, padx=5, pady=5, sticky="nw")
-        
         
 #frame originalni data
 class OriginalDataGUI(LabelFrame):
@@ -1106,4 +1056,3 @@ class FiltraceDatGUI(LabelFrame):
         self.label_metoda_filtrace.grid(row=1, column=0, padx=5, pady=5, sticky="nw")
         self.drop_filtrace.grid(row=1, column=1, padx=5, pady=5, sticky="nw")
         self.BTN_filtrace.grid(row=1, column=2, padx=5, pady=5, sticky="nw")
-        

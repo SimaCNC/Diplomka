@@ -8,11 +8,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-
 if TYPE_CHECKING:
     from view.main_view import KalibraceGUI
     from controller.kalibrace_controller import MainController
-
 
 class KalibracniOkno(Toplevel):
     def __init__(self, parent, kalibrace_gui, controller : 'MainController'):
@@ -45,7 +43,6 @@ class KalibracniOkno(Toplevel):
         self.text = Text(self.frame_text, width=80, height=30, relief="flat")
         self.text.grid(row=0, column=0, padx=0, pady=0)
         
-        
          #data ze subysystemu MCU
         self.data_casy = []
         self.data_pozice = []
@@ -59,7 +56,6 @@ class KalibracniOkno(Toplevel):
         self.data_vlhkost = []    
         self.data_tlak = []
         self.data_osvetleni = []
-        
         
         #VYBER METODY KALIBRACE A JEHO SPUSTENI PRES CONTROLLER
         #AD
@@ -105,11 +101,9 @@ class KalibracniOkno(Toplevel):
             print("Špatně vybraná konfigurace kalibrace !!, neexistujici kombinace vyberu zpracovani dat a strategie kalibrace")
             self.after(0, self.window_exit) #zavreni okna po dokonceni konstruktoru
         #VYBER METODY KALIBRACE A JEHO SPUSTENI PRES CONTROLLER    
-            
     
         self.fig, self.ax = plt.subplots()
         #POPISKY GRAFU
-        
         
         if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
             self.ax.set_title("Závislost velikosti napětí na vzdálenosti přiblíženi stěny k snímači od reference")
@@ -125,7 +119,6 @@ class KalibracniOkno(Toplevel):
             print(f"[{self.__class__.__name__}] vybraná frekvence")
             
         #POPISKY GRAFU
-            
         #canvas pro vlozeni matplotlib do tkinter okna
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_graf)
         self.widget = self.canvas.get_tk_widget()
@@ -145,8 +138,6 @@ class KalibracniOkno(Toplevel):
         self.ax.minorticks_on()
         self.ax.grid(which='major', linestyle='--', linewidth=0.7, alpha=0.8)
         self.ax.grid(which='minor', linestyle='-', linewidth=0.3, alpha=0.4)
-        
-        
         
     #GRAF PRO AD: if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
     def aktualizace_graf_ad(self):
@@ -191,16 +182,15 @@ class KalibracniOkno(Toplevel):
         print(f"[{self.__class__.__name__}] Počet bodů v grafu: {len(self.data_pozice)}")
         
         #VYCISTIT TEXT + AKTUALIZACE
-        
         if self.controller.kalibrace.kalibrace == True:
             self.after(500, self.aktualizace_graf_ad) #rekurzivne, cyklicky chod
+            
         #konec mereni - ulozeni grafu
         else:
             self.cesta_obrazku = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_ad.png")
             self.controller.kalibrace.kalibracni_obrazek = self.cesta_obrazku
             self.fig.savefig(self.cesta_obrazku, dpi = 300)
             print(f"{self.__class__.__name__} OBRAZEK ULOZEN")
-        
         
     #GRAF PRO FREKVENCI: elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
     def aktualizace_graf_frekvence(self):
@@ -214,7 +204,6 @@ class KalibracniOkno(Toplevel):
             smer = zaznam.get("smer", "y-") 
             
             print(f"[{self.__class__.__name__}] {pozice}(um) {frekvence}(Hz)")
-            
             
             if smer == "y-":
                 self.data_pozice_minus.append(pozice)
@@ -256,7 +245,6 @@ class KalibracniOkno(Toplevel):
             self.fig.savefig(self.cesta_obrazku, dpi = 300)
             print(f"{self.__class__.__name__} OBRAZEK ULOZEN")
              
-
     def window_exit(self):
         # zavrit = messagebox.askyesno("Ukončení aplikace", "Upravdu si přejete ukončit aplikaci?")
         # if zavrit:

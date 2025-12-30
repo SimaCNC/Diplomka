@@ -11,22 +11,12 @@ mcu_serial = SerialCtrl()
 piezo_model = Piezo_model(piezo_serial)
 mcu_model = MCU_model(mcu_serial)
 
-
-#-----MODEL---- 
-
 #-----VIEW----- 
 root_view = RootGUI()
-#-----VIEW----- 
 
 #-----CONTROLLER---- C
 controller = MainController(root_view.root, root_view, piezo_model, mcu_model)
 controller.setup_gui()
 
-
-
-#-----CONTROLLER----
-
-
 #----ZAPNUTI GUI APLIKACE----
 root_view.root.mainloop()
-#----ZAPNUTI GUI APLIKACE----

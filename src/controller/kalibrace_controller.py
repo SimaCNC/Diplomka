@@ -19,7 +19,6 @@ from IPython.display import display
 
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from view.main_view import RootGUI, ComGUI, PiezoGUI,McuGUI
     from model.Piezo_model import Piezo_model
@@ -42,18 +41,13 @@ class KalibraceController():
         self.pocet_zaznamu = 10
         self.kalibrace = False
         
-        
         self.vzorky = []
         self.teplota = []
         self.tlak = []
         self.vlhkost = []
         self.osvetleni = []
         self.poloha = 0
-        
-        #misto pro ukladani dat:
-        #self.controller.zpracovani.data
-        
-        
+     
         #fronta pro vytvareni grafu:
         self.queue_graf = queue.Queue()
         
@@ -96,7 +90,6 @@ class KalibraceController():
 
         print(f"[{self.__class__.__name__}] merena vzdalenost je {self.merena_vzdalenost:.3f} (µm)")
         
-      
     def vybrat_pracovni_slozku(self):
         self.pracovni_slozka = filedialog.askdirectory(title="Pracovní složka")
         print(f"[{self.__class__.__name__}] složka {self.pracovni_slozka}")
@@ -234,7 +227,6 @@ class KalibraceController():
                     #ulozeni surovych dat do csv
                     df.to_csv(cesta_csv, mode='a', header=False, index=False)
 
-
                     #zapis statistickych hodnot do dat a poslani do Zpracovani_modelu tridy
                     summary_df = pd.DataFrame([{
                         "cas": cas,
@@ -248,7 +240,6 @@ class KalibraceController():
                         "smer" : smer
                     }])
                     self.controller.zpracovani.summary_df = pd.concat([self.controller.zpracovani.summary_df, summary_df], ignore_index=True)
-
 
                     #pridani jednotlivych polozek vzorku do fronty
                     for n, t in zip(self.vzorky, self.teplota):
@@ -269,7 +260,6 @@ class KalibraceController():
                                 time.sleep(0.1)     
 
                 #nastavit pozici - prvi iterace nulove posunuti
-                #time sleep dle rychlosti
 
                 self.mcu_model.lock_ad = False
 
@@ -283,8 +273,7 @@ class KalibraceController():
                 #pokud vsechny pozice bylo zmereno, tak uspesna kalibrace
                 if iterace == (self.pocet_kroku):
                     self.controller.kalibrace_finish = True
-                    
-                
+                            
             #precteni celeho CSV a nahrani do XLSX
             df_csv = pd.read_csv(cesta_csv)
             try:
@@ -438,7 +427,6 @@ class KalibraceController():
                     #ulozeni surovych dat do csv
                     df.to_csv(cesta_csv, mode='a', header=False, index=False)
 
-
                     #zapis statistickych hodnot do dat a poslani do Zpracovani_modelu tridy
                     summary_df = pd.DataFrame([{
                         "cas": cas,
@@ -452,7 +440,6 @@ class KalibraceController():
                         "smer" : smer
                     }])
                     self.controller.zpracovani.summary_df = pd.concat([self.controller.zpracovani.summary_df, summary_df], ignore_index=True)
-
 
                     #pridani jednotlivych polozek vzorku do fronty
                     for n, t in zip(self.vzorky, self.teplota):
@@ -481,7 +468,6 @@ class KalibraceController():
 
                 iterace += 1
 
-                    
             #SMER oddalovani
             self.mcu_model.lock_ad = True #odemknuti ad
             smer = "y-"
@@ -621,10 +607,6 @@ class KalibraceController():
         self.t1 = threading.Thread(target=kalibrace_start_inner, daemon=True)
         self.t1.start()
        
-       
-       
-       
-       
     #SMYCKA VLAKNO FUNKCE kalibrace s PULZY DOPREDNA
     """
     SMYCKA PRO PULZY DOPREDNA
@@ -705,16 +687,7 @@ class KalibraceController():
                     if abs(self.poloha) < 1e-9:
                         self.poloha = 0.000
                     cas = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                
-                    # lengths = {
-                    #             "vzorky": len(self.vzorky),
-                    #             "teplota": len(self.teplota),
-                    #             "tlak": len(self.tlak),
-                    #             "vlhkost": len(self.vlhkost)
-                    #         }
-                    # print(f"[{self.__class__.__name__}] debug delky prijatych dat: {lengths}")
-                    
-                    
+                                
                     df = pd.DataFrame({
                             "cas": [cas]*len(self.vzorky),
                             "pozice": [f"{self.poloha:.3f}"]*len(self.vzorky),
@@ -744,8 +717,7 @@ class KalibraceController():
                         "smer" : smer
                     }])
                     self.controller.zpracovani.summary_df = pd.concat([self.controller.zpracovani.summary_df, summary_df], ignore_index=True)
-                    
-                                                            
+                                                     
                     #pridani jednotlivych polozek vzorku do fronty
                     for f, t in zip(self.vzorky, self.teplota):
                         self.queue_graf.put({
@@ -826,12 +798,9 @@ class KalibraceController():
             #debug vypis dat rychly
             display(self.controller.zpracovani.df)
             display(self.controller.zpracovani.summary_df)
-            
-                
-                
+                        
         self.t1 = threading.Thread(target=kalibrace_start_inner, daemon=True)
         self.t1.start()
-        
         
     #SMYCKA VLAKNO FUNKCE kalibrace s HYSTEREZE DOPREDNA      
     """
@@ -921,16 +890,7 @@ class KalibraceController():
                     if abs(self.poloha) < 1e-9:
                         self.poloha = 0.000
                     cas = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                
-                    # lengths = {
-                    #             "vzorky": len(self.vzorky),
-                    #             "teplota": len(self.teplota),
-                    #             "tlak": len(self.tlak),
-                    #             "vlhkost": len(self.vlhkost)
-                    #         }
-                    # print(f"[{self.__class__.__name__}] debug delky prijatych dat: {lengths}")
-                    
-                    
+                                                      
                     df = pd.DataFrame({
                             "cas": [cas]*len(self.vzorky),
                             "pozice": [f"{self.poloha:.3f}"]*len(self.vzorky),
@@ -960,8 +920,7 @@ class KalibraceController():
                         "smer" : smer
                     }])
                     self.controller.zpracovani.summary_df = pd.concat([self.controller.zpracovani.summary_df, summary_df], ignore_index=True)
-                    
-                                                            
+                                                                    
                     #pridani jednotlivych polozek vzorku do fronty
                     for f, t in zip(self.vzorky, self.teplota):
                         self.queue_graf.put({
@@ -1083,9 +1042,7 @@ class KalibraceController():
                 #pokud vsechny pozice bylo zmereno, tak uspesna kalibrace
                 if iterace == (self.pocet_kroku):
                     self.controller.kalibrace_finish = True
-                
-                
-                  
+                                 
             #precteni celeho CSV a nahrani do XLSX
             df_csv = pd.read_csv(cesta_csv)
             try:
@@ -1133,10 +1090,6 @@ class KalibraceController():
             #debug vypis dat rychly
             display(self.controller.zpracovani.df)
             display(self.controller.zpracovani.summary_df)
-            
-                
-                
+                     
         self.t1 = threading.Thread(target=kalibrace_start_inner, daemon=True)
         self.t1.start()
-        
-        

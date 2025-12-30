@@ -235,7 +235,3 @@ class MCU_model():
                 return 0
             
         return None
-    
-    
-        
-        
