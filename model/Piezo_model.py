@@ -10,6 +10,7 @@ class Piezo_model():
     def __init__(self, piezo_serial : 'SerialCtrl'):
         self.piezo_serial = piezo_serial
         self.prostor = False
+        self.pockej = False
         
         self.x = None
         self.y = None

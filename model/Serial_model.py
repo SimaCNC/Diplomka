@@ -89,11 +89,12 @@ class SerialCtrl():
                         if "9" in (x_val, y_val, z_val):
                             print(f"{self.__class__.__name__} CHYBA 9 !!! PIEZOPOHONY! NUTNO VYPNOUT A ZAPNOUT PIEZOPOHONY")
                             
-                if re.match(expect_regex, msg_received):                   
+                if re.match(expect_regex, msg_received):
+                    print(f"[stream] NALEZENO V PRIJATE MSG: {msg_received}, Z OCEKAVANE {expect_regex}")                   
                     if callback_fun:
                         callback_fun(msg_received)
                         time.sleep(0.01)
-                    self.lock = True    
+                    self.lock = True #odemknuto
                     break #konec vlakna
                 else:
                     continue

@@ -49,7 +49,12 @@ class KalibracniOkno(Toplevel):
          #data ze subysystemu MCU
         self.data_casy = []
         self.data_pozice = []
+        self.data_pozice_minus = []
+        self.data_pozice_plus = []
+        self.data_smer = []
         self.data_vzorky = []
+        self.data_vzorky_minus = []
+        self.data_vzorky_plus = []
         self.data_teplota = []
         self.data_vlhkost = []    
         self.data_tlak = []
@@ -64,7 +69,13 @@ class KalibracniOkno(Toplevel):
             if self.controller.piezo_model.prostor == False:
                 self.window_exit()
                 return
-            
+        
+        elif self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze":
+            self.controller.kalibrace.kalibrace_start_ad_hystereze()
+            self.controller.blok_widgets(self.controller.root)
+            if self.controller.piezo_model.prostor == False:
+                self.window_exit()
+                return     
         
         elif self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
             print(f"[{self.__class__.__name__}] TATO VOLBA NEEXISTUJE, NONE")
@@ -106,17 +117,13 @@ class KalibracniOkno(Toplevel):
             self.ax.set_ylabel("Napětí (V)")
             print(f"[{self.__class__.__name__}] vybrané napětí")
           
-        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná":
+        elif self.controller.protokol_gui.vybrane_var.get() == "2" and (self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná"or
+                                                                        self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze"):
             self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače")
             self.ax.set_xlabel("Vzdálenost (um)")
             self.ax.set_ylabel("Frekvence (Hz)")
             print(f"[{self.__class__.__name__}] vybraná frekvence")
             
-        elif self.controller.protokol_gui.vybrane_var.get() == "2" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze":
-            self.ax.set_title("Závislost frekvence pulzů na vzdálenosti stěny od snímače - hystereze")
-            self.ax.set_xlabel("Vzdálenost (um)")
-            self.ax.set_ylabel("Frekvence (Hz)")
-            print(f"[{self.__class__.__name__}] vybraná frekvence")
         #POPISKY GRAFU
             
         #canvas pro vlozeni matplotlib do tkinter okna
@@ -125,15 +132,15 @@ class KalibracniOkno(Toplevel):
         self.widget.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         
         #SPUSTENI FUNKCE ZA 500ms SE FUNKCE PRO AKTUALIZACI GRAFU
-        if self.controller.protokol_gui.vybrane_var.get() == "1" and self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná":
+        if self.controller.protokol_gui.vybrane_var.get() == "1" and (self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Zpětná" or
+                                                                      self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze"):
             self.after(500, self.aktualizace_graf_ad)
         
         elif self.controller.protokol_gui.vybrane_var.get() == "2" and (self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Dopředná" or
-                                                                        self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze"):
-                                                                        
+                                                                        self.controller.kalibrace_gui.vybrany_drop_strategie.get() == "Hystereze"):                                                  
             self.after(500, self.aktualizace_graf_frekvence)
+            
         #SPUSTENI FUNKCE ZA 500ms SE FUNKCE PRO AKTUALIZACI GRAFU
-        
         self.ax.clear()
         self.ax.minorticks_on()
         self.ax.grid(which='major', linestyle='--', linewidth=0.7, alpha=0.8)
@@ -150,23 +157,30 @@ class KalibracniOkno(Toplevel):
             
             pozice = zaznam["pozice"]
             napeti = zaznam["napeti"]
+            smer = zaznam.get("smer", "y-") 
             
             print(f"[{self.__class__.__name__}] {pozice}(um) {napeti}(V)")
             
-            self.data_pozice.append(round(float(pozice), 3))
-            self.data_vzorky.append(round(float(napeti), 3))
+            if smer == "y-":
+                self.data_pozice_minus.append(pozice)
+                self.data_vzorky_minus.append(napeti)
+            else:
+                self.data_pozice_plus.append(pozice)
+                self.data_vzorky_plus.append(napeti)
             
         #VYCISTIT GRAF + AKTUALIZACE
         self.ax.clear()
-        self.ax.set_title("Závislost napětí na přiblížení stěny (reference) ke snímači")
-        self.ax.set_xlabel("Přiblížení (um)")
+        self.ax.set_title("Závislost napětí na vzdálenosti stěny od snímače")
+        self.ax.set_xlabel("Vzdálenost (um)")
         self.ax.set_ylabel("Napětí (V)")
         self.ax.minorticks_on()
         self.ax.grid(which='major', linestyle='--', linewidth=0.7, alpha=0.8)
         self.ax.grid(which='minor', linestyle='--', linewidth=0.3, alpha=0.4)
             
         try:
-            self.ax.plot(self.data_pozice, self.data_vzorky, 'o', markersize=5, color='red')
+            self.ax.plot(self.data_pozice_minus, self.data_vzorky_minus, 'o', color='red', label='Oddalování (y-)')
+            self.ax.plot(self.data_pozice_plus, self.data_vzorky_plus, 'o', color='blue', label='Přibližování (y+)')
+            self.ax.legend()
         except Exception as e:
             print(f"[{self.__class__.__name__}] CHYBA: {e}")
             
@@ -179,7 +193,7 @@ class KalibracniOkno(Toplevel):
         #VYCISTIT TEXT + AKTUALIZACE
         
         if self.controller.kalibrace.kalibrace == True:
-            self.after(600, self.aktualizace_graf_ad) #rekurzivne, cyklicky chod
+            self.after(500, self.aktualizace_graf_ad) #rekurzivne, cyklicky chod
         #konec mereni - ulozeni grafu
         else:
             self.cesta_obrazku = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_ad.png")
@@ -197,11 +211,17 @@ class KalibracniOkno(Toplevel):
             
             pozice = zaznam["pozice"]
             frekvence = zaznam["frekvence"]
+            smer = zaznam.get("smer", "y-") 
             
             print(f"[{self.__class__.__name__}] {pozice}(um) {frekvence}(Hz)")
             
-            self.data_pozice.append(round(float(pozice), 3))
-            self.data_vzorky.append(int(frekvence))
+            
+            if smer == "y-":
+                self.data_pozice_minus.append(pozice)
+                self.data_vzorky_minus.append(frekvence)
+            else:
+                self.data_pozice_plus.append(pozice)
+                self.data_vzorky_plus.append(frekvence)
                    
         # VYCISTIT GRAF + AKTUALIZACE
         self.ax.clear()
@@ -213,7 +233,9 @@ class KalibracniOkno(Toplevel):
         self.ax.grid(which='minor', linestyle='--', linewidth=0.3, alpha=0.4)
 
         try:
-            self.ax.plot(self.data_pozice, self.data_vzorky, 'o', markersize=5, color='red')
+            self.ax.plot(self.data_pozice_minus, self.data_vzorky_minus, 'o', color='red', label='Oddalování (y-)')
+            self.ax.plot(self.data_pozice_plus, self.data_vzorky_plus, 'o', color='blue', label='Přibližování (y+)')
+            self.ax.legend()
         except Exception as e:
             print(f"[{self.__class__.__name__}] CHYBA: {e}")
 
@@ -226,7 +248,7 @@ class KalibracniOkno(Toplevel):
         #VYCISTIT TEXT + AKTUALIZACE
         
         if self.controller.kalibrace.kalibrace == True:
-            self.after(600, self.aktualizace_graf_frekvence) #rekurzivne, cyklicky chod
+            self.after(500, self.aktualizace_graf_frekvence) #rekurzivne, cyklicky chod
         else:
             #konec mereni - ulozeni grafu
             self.cesta_obrazku = os.path.join(self.controller.kalibrace.pracovni_slozka, "graf_frekvence.png")

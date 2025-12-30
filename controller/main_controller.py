@@ -293,6 +293,17 @@ class MainController():
             
         self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
         
+    def M_C_pohyb_piezo_GT(self, x=None,y=None,z=None):
+        self.lock_pohyb = False
+        self.M_C_disable_piezo_buttons()
+        
+        self.piezo_model.pohyb_piezo_GT(x,y,z)
+        
+        def callback_po_odpovedi_piezo():
+            self.M_C_odpoved_wait(send="RS x y z\n", expect=r"^\$RS x[27] y[27] z[27]$", callback_fun = self.M_C_precti_polohu) #aktualni pozice po zastaveni
+            
+        self.piezo_model.msg_odpoved(callback_fun=callback_po_odpovedi_piezo)
+        
     #deaktivovani tlacitek pri pohybu - mozna implementovat do view a pak jen funkce volat z controlleru    
     def M_C_disable_piezo_buttons(self):
         self.piezo_gui.disable_piezo_buttons()
