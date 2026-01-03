@@ -153,7 +153,7 @@ class ComGUI(LabelFrame):
         self.mcu_model = mcu_model
         
         #LEVE OKNA - COM PRIPOJENI 
-        self.frame_piezo = LabelFrame(self, text="Piezpohony", padx=5, pady=5, bg="white")
+        self.frame_piezo = LabelFrame(self, text="Piezopohony", padx=5, pady=5, bg="white")
         self.frame_MCU = LabelFrame(self, text="MCU", padx=5, pady=5, bg="white")
         
         #LEVE OKNA - PRVKY

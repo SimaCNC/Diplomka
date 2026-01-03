@@ -1,0 +1,59 @@
+@startuml
+title Stavový diagram hlavního programu MCU
+
+hide empty description
+skinparam state {
+  BackgroundColor White
+  BorderColor Black
+  FontSize 12
+}
+
+[*] --> STAV_WAIT
+
+state STAV_WAIT {
+  WAIT : Čekání na příkaz z USB/UART
+}
+
+STAV_WAIT --> STAV_PRIJEM : UART_prijat_prikaz
+
+state STAV_PRIJEM {
+  PRIJEM : Dekódování příkazu\nInicializace měření
+}
+
+STAV_PRIJEM --> STAV_MERENI_PULZY : #D
+STAV_PRIJEM --> STAV_CEKANI_STOP_PULZY : #SD
+STAV_PRIJEM --> STAV_MERENI_AD : #A
+
+STAV_PRIJEM --> STAV_WAIT : #T
+STAV_PRIJEM --> STAV_WAIT : #BME
+STAV_PRIJEM --> STAV_WAIT : #SC
+STAV_PRIJEM --> STAV_WAIT : #LUX
+STAV_PRIJEM --> STAV_WAIT : Chybný příkaz
+
+state STAV_MERENI_PULZY {
+  MERENI_PULZY : Měření frekvence\nTIM2 + IC + DMA\nVýpočet frekvence
+}
+
+STAV_MERENI_PULZY --> STAV_ODESLANI_KONEC : domereno_IC == 1
+
+state STAV_CEKANI_STOP_PULZY {
+  STREAM : Streamování frekvence\nčekání na #XSD
+}
+
+STAV_CEKANI_STOP_PULZY --> STAV_ODESLANI_KONEC : #XSD
+STAV_CEKANI_STOP_PULZY --> STAV_CEKANI_STOP_PULZY : jinak
+
+state STAV_MERENI_AD {
+  MERENI_AD : Měření ADC\nADC + DMA
+}
+
+STAV_MERENI_AD --> STAV_MERENI_AD : adc_ready && zmerene_ad < merit_ad
+STAV_MERENI_AD --> STAV_WAIT : adc_ready && zmerene_ad >= merit_ad
+
+state STAV_ODESLANI_KONEC {
+  KONEC : Zastavení periferií\nVyčištění bufferů
+}
+
+STAV_ODESLANI_KONEC --> STAV_WAIT
+
+@enduml

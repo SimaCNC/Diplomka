@@ -20,7 +20,7 @@ class KalibracniOkno(Toplevel):
         self.title("Probíhá kalibrace")
         self.geometry("1400x800")
         self.config(bg="white")
-        self.iconbitmap('icon/logo_uprava2.ico')
+        self.iconbitmap('template/icon/logo.ico')
         self.cesta_obrazku = None
         
         # self.scroll_frame = ScrollableFrame(self)
