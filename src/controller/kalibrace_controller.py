@@ -5,13 +5,9 @@ import threading
 import time
 import pandas as pd
 import queue
-import re
-import csv
 import os
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
-from openpyxl.utils import get_column_letter
-import matplotlib.pyplot as plt
+from openpyxl.styles import Font
 from datetime import datetime
 import math
 import inspect

@@ -7,6 +7,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import inspect
+import webbrowser
 from view.kalibrace_view import KalibracniOkno
 from model.KalibracniKrivky_model import KalibracniKrivkyData
 import sys
@@ -49,7 +50,7 @@ class RootGUI():
         self.menu.add_command(label="Kalibrace", command=lambda: self.show_frame("kalibrace"))
         self.menu.add_command(label="Data", command=lambda : self.show_frame("data"))
         self.menu.add_command(label="Kalibrační křivky", command=lambda : self.show_frame("kalibrační křivky"))
-        self.menu.add_command(label="Nápověda", command=lambda : self.show_frame("napoveda"))
+        self.menu.add_command(label="Nápověda", command=lambda : webbrowser.open('https://github.com/SimaCNC/Kalibrace-snimacu-malych-posunuti'))
         self.menu.add_command(label="Konec", command=self.window_exit)
         
         self.root.config(menu=self.menu)
@@ -977,35 +978,40 @@ class OriginalDataGUI(LabelFrame):
         self.ax1.set_xlabel("Vzdálenost (um)")
         self.ax1.set_ylabel(f"{self.data.data_typ} {self.data.data_jednotka}")
         self.ax1.minorticks_on()
-        self.ax1.plot(self.data.data_x, self.data.data_y, 'o', markersize=5, color='red')
+        # self.ax1.step(self.data.data_x, self.data.data_y, where = 'post', color='red')
+        self.ax1.plot(self.data.data_x, self.data.data_y, 'o', markersize=1, color='red')
         
         self.ax2.clear()
         self.ax2.grid(True, which='both', linestyle='--', alpha=0.5)
         self.ax2.set_title("Průběh teploty")
         self.ax2.set_xlabel("čas t(s)")
         self.ax2.set_ylabel("Teplota (°C)")
-        self.ax2.plot(self.data.data_cas, self.data.data_teplota, 'o', color='red')
+        self.ax2.step(self.data.data_cas, self.data.data_teplota, where = 'post', color='red')
+        # self.ax2.plot(self.data.data_cas, self.data.data_teplota, 'o', markersize=1, color='red')
         
         self.ax3.clear()
         self.ax3.grid(True, which='both', linestyle='--', alpha=0.5)
         self.ax3.set_title("Průběh tlak")
         self.ax3.set_xlabel("čas t(s)")
         self.ax3.set_ylabel("Tlak (Pa)")
-        self.ax3.plot(self.data.data_cas, self.data.data_tlak, 'o', color='red')
+        self.ax3.step(self.data.data_cas, self.data.data_tlak, where = 'post', color='red')
+        # self.ax3.plot(self.data.data_cas, self.data.data_tlak, 'o', markersize=1, color='red')
         
         self.ax4.clear()
         self.ax4.grid(True, which='both', linestyle='--', alpha=0.5)
         self.ax4.set_title("Průběh vlhkost")
         self.ax4.set_xlabel("čas t(s)")
         self.ax4.set_ylabel("Vlhkost (%)")
-        self.ax4.plot(self.data.data_cas, self.data.data_vlhkost, 'o', color='red')
+        self.ax4.step(self.data.data_cas, self.data.data_vlhkost, where = 'post', color='red')
+        # self.ax4.plot(self.data.data_cas, self.data.data_vlhkost, 'o', markersize=1, color='red')
         
         self.ax5.clear()
         self.ax5.grid(True, which='both', linestyle='--', alpha=0.5)
         self.ax5.set_title("Průběh osvětlení")
         self.ax5.set_xlabel("čas t(s)")
         self.ax5.set_ylabel("Osvětlení (lux)")
-        self.ax5.plot(self.data.data_cas, self.data.data_osvetleni, 'o', color='red')
+        self.ax5.step(self.data.data_cas, self.data.data_osvetleni, where = 'post', color='red')
+        # self.ax5.plot(self.data.data_cas, self.data.data_osvetleni, 'o', markersize=1, color='red')
 
         self.canvas.draw()
         
@@ -1021,7 +1027,7 @@ class OriginalDataGUI(LabelFrame):
         self.ax_filtrace.set_xlabel("Vzdálenost (um)")
         self.ax_filtrace.set_ylabel(f"{self.data.data_typ} {self.data.data_jednotka}")
         self.ax_filtrace.grid(True, which='both', linestyle='--', alpha=0.5)
-        self.ax_filtrace.plot(self.data.osa_filtrovane,self.data.data_filtrovane,'o', markersize=5, color='red')
+        self.ax_filtrace.plot(self.data.osa_filtrovane,self.data.data_filtrovane,linestyle = 'solid', color='red')
         self.fig_filtrace.subplots_adjust(left=0.18, right=0.95, top=0.9, bottom=0.15)
         self.ax_filtrace.yaxis.labelpad = 20
         

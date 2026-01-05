@@ -3,6 +3,7 @@ from tkinter import messagebox
 import threading
 import time
 import re
+import webbrowser
 from view.main_view import MainPage, OvladaniPage, KalibracePage, DataPage, KalibracniKrivkyPage
 from typing import TYPE_CHECKING
 from controller.kalibrace_controller import KalibraceController
@@ -69,8 +70,10 @@ class MainController():
         self.view.add_frame("kalibrace", KalibracePage, self, self.piezo_model, self.mcu_model)
         self.view.add_frame("data", DataPage, self)
         self.view.add_frame("kalibrační křivky", KalibracniKrivkyPage, self)
-        #self.view.add_frame("nápověda")
         self.view.show_frame("main")
+
+    def otevrit_napovedu(self):
+        webbrowser.open('https://github.com/SimaCNC/Kalibrace-snimacu-malych-posunuti')
 
 #zablokovani vsech widgetu
     def blok_widgets(self, root : 'Tk'):

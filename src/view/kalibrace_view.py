@@ -169,8 +169,8 @@ class KalibracniOkno(Toplevel):
         self.ax.grid(which='minor', linestyle='--', linewidth=0.3, alpha=0.4)
             
         try:
-            self.ax.plot(self.data_pozice_minus, self.data_vzorky_minus, 'o', color='red', label='Oddalování (y-)')
-            self.ax.plot(self.data_pozice_plus, self.data_vzorky_plus, 'o', color='blue', label='Přibližování (y+)')
+            self.ax.plot(self.data_pozice_minus, self.data_vzorky_minus, 'o', color='red', label='Oddalování (y-)', markersize=1)
+            self.ax.plot(self.data_pozice_plus, self.data_vzorky_plus, 'o', color='blue', label='Přibližování (y+)', markersize=1)
             self.ax.legend()
         except Exception as e:
             print(f"[{self.__class__.__name__}] CHYBA: {e}")
@@ -222,8 +222,8 @@ class KalibracniOkno(Toplevel):
         self.ax.grid(which='minor', linestyle='--', linewidth=0.3, alpha=0.4)
 
         try:
-            self.ax.plot(self.data_pozice_minus, self.data_vzorky_minus, 'o', color='red', label='Oddalování (y-)')
-            self.ax.plot(self.data_pozice_plus, self.data_vzorky_plus, 'o', color='blue', label='Přibližování (y+)')
+            self.ax.plot(self.data_pozice_minus, self.data_vzorky_minus, 'o', color='red', label='Oddalování (y-)', markersize=1)
+            self.ax.plot(self.data_pozice_plus, self.data_vzorky_plus, 'o', color='blue', label='Přibližování (y+)', markersize=1)
             self.ax.legend()
         except Exception as e:
             print(f"[{self.__class__.__name__}] CHYBA: {e}")

@@ -2,7 +2,6 @@
 from typing import TYPE_CHECKING
 from tkinter import filedialog
 import pandas as pd
-import numpy as np
 from scipy.signal import savgol_filter
 
 if TYPE_CHECKING:
